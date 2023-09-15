@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    jobLabel: cadvisor
+    release: prometheus
+  name: cadvisor
+  namespace: prometheus
+spec:
+  attachMetadata:
+    node: false
+  endpoints:
+  - port: http-cadvisor
+    scheme: http
+  jobLabel: jobLabel
+  selector:
+    matchLabels:
+      release: prometheus
