@@ -1,1 +1,5 @@
 examples
+values.yaml 
+configMaps/*
+!configMaps/*.template.json
+.DS_Store

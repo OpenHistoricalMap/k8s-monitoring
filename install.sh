@@ -1,16 +1,36 @@
 #!/bin/bash
+set -x
 
-# Check if GRAFANA_ADMINPASSWORD exist
 if [ -z "$GRAFANA_ADMINPASSWORD" ]; then
     export GRAFANA_ADMINPASSWORD="1234"
 fi
 
+export DS_PROMETHEUS=prometheus
+
+create_update_configmap() {
+  local configmap_name=$1
+  local template_file=$2
+  local json_file="${template_file//.template/}"
+  envsubst < "$template_file" > "$json_file"
+  kubectl delete configmap "$configmap_name" -n prometheus --ignore-not-found=true
+  kubectl create configmap "$configmap_name" --from-file="$json_file" -n prometheus
+}
+
 install_Prometheus() {
     # Install prometheus and node exporter
-    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-    helm repo update
-    kubectl create namespace prometheus
-    helm install prometheus prometheus-community/kube-prometheus-stack --namespace prometheus
+    # helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    # helm repo update
+
+    # Create namespace
+    kubectl apply -f namespace.yaml
+
+    ## Create/Update configMap
+    # create_update_configmap "node-exporter-full" "configMaps/1860_rev32.template.json"
+    # create_update_configmap "cadvisor" "configMaps/14282_rev1.template.json"
+
+    envsubst <values.template.yaml >values.yaml
+    helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -f values.yaml --namespace prometheus
+
     # Install cAdvisor
     kubectl apply -R -f cadvisor/
     kubectl get pods --namespace prometheus
@@ -22,7 +42,8 @@ delete_prometheus() {
 }
 
 start_sites() {
-    kubectl port-forward svc/prometheus-operated 9090  --namespace prometheus
+    set -x
+    kubectl port-forward svc/prometheus-operated 9090 --namespace prometheus
     kubectl port-forward deployment/prometheus-grafana 3000 --namespace prometheus
 }
 
@@ -30,8 +51,8 @@ start_sites() {
 ask_and_execute() {
     echo "Which function would you like to execute?"
     echo "1) Install Prometheus"
-    echo "2) Delete Prometheus"
-    echo "3) Prometheus/Grafana port forward"
+    echo "2) Prometheus/Grafana port forward"
+    echo "3) Delete Prometheus"
     echo "4) Quit"
 
     read -p "Enter your choice [1-4]: " choice
