@@ -21,9 +21,3 @@ grafana:
         pods:
           url: https://raw.githubusercontent.com/Rub21/k8s-monitoring/main/configMaps/14282_rev1.template.json
           token: ''
-  # dashboards:
-  #   grafana-dashboards-kubernetes:
-  #     nodes:
-  #       configMap: node-exporter-full
-  #     pods:
-  #       configMap: cadvisor

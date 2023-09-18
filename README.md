@@ -3,9 +3,26 @@
 
 This repo contains scripts that allow for the installation of Prometheus and various exporters. The goal is to streamline the process, making it easy and quick from installation to viewing reports in Grafana.
 
+## Install prometheus
 
-## Display values that can be updated
+This will install Prometheus, Grafana, Node-Exporter, and cAdvisor.
 
+```sh
+./deploy.sh create
 ```
-helm show values prometheus-community/kube-prometheus-stack > values.yaml
+## Export UI dashboards 
+
+- Prometheus:
+
+`kubectl port-forward svc/prometheus-operated 9090 --namespace prometheus`
+
+- Grafana
+
+`kubectl port-forward deployment/prometheus-grafana 3000 --namespace prometheus`
+
+## Delete prometheus
+
+```sh
+./deploy.sh delete
 ```
+
