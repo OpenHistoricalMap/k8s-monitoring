@@ -15,7 +15,7 @@ create_update_configmap() {
     envsubst <"$template_file" >"$json_file"
     kubectl delete configmap "$configmap_name" -n prometheus --ignore-not-found=true
     kubectl create configmap "$configmap_name" --from-file="$json_file" -n prometheus
-
+    
 }
 
 install_Prometheus() {
@@ -27,27 +27,27 @@ install_Prometheus() {
         # helm show values prometheus-community/kube-prometheus-stack > values.yaml
         # Create namespace
         kubectl apply -f namespace.yaml
-
+        
         # Create/Update configMap
         create_update_configmap "node-exporter-full" "configMaps/1860_rev32.template.json"
         create_update_configmap "cadvisor" "configMaps/14282_rev1.template.json"
         envsubst <values.template.yaml >values.yaml
-
+        
         helm upgrade \
-            --install prometheus prometheus-community/kube-prometheus-stack \
-            -f values.yaml \
-            --namespace prometheus
-
+        --install prometheus prometheus-community/kube-prometheus-stack \
+        -f values.yaml \
+        --namespace prometheus
+        
         helm upgrade \
-            --install kube-state-metrics prometheus-community/kube-state-metrics \
-            --namespace prometheus
-
-        ## Postgres exporter 
+        --install kube-state-metrics prometheus-community/kube-state-metrics \
+        --namespace prometheus
+        
+        ## Postgres exporter
         helm upgrade \
         --install postgres-exporter prometheus-community/prometheus-postgres-exporter \
         -f postgres-exporter/values.yaml \
         --namespace prometheus
-
+        
         # Install cAdvisor
         kubectl apply -R -f cadvisor/
         kubectl get pods --namespace prometheus
@@ -68,7 +68,7 @@ export ACTION=$1
 ACTION=${ACTION:-default}
 if [ "$ACTION" == "create" ]; then
     install_Prometheus
-elif [ "$ACTION" == "delete" ]; then
+    elif [ "$ACTION" == "delete" ]; then
     delete_prometheus
 else
     echo "The action is unknown."
