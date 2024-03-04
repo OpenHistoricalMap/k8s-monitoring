@@ -32,7 +32,21 @@ install_Prometheus() {
         create_update_configmap "node-exporter-full" "configMaps/1860_rev32.template.json"
         create_update_configmap "cadvisor" "configMaps/14282_rev1.template.json"
         envsubst <values.template.yaml >values.yaml
-        helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -f values.yaml --namespace prometheus
+
+        helm upgrade \
+            --install prometheus prometheus-community/kube-prometheus-stack \
+            -f values.yaml \
+            --namespace prometheus
+
+        helm upgrade \
+            --install kube-state-metrics prometheus-community/kube-state-metrics \
+            --namespace prometheus
+
+        ## Postgres exporter 
+        helm upgrade \
+        --install postgres-exporter prometheus-community/prometheus-postgres-exporter \
+        -f postgres-exporter/values.yaml \
+        --namespace prometheus
 
         # Install cAdvisor
         kubectl apply -R -f cadvisor/
@@ -45,6 +59,7 @@ delete_prometheus() {
     if [[ $confirm == [Yy] ]]; then
         helm delete prometheus --namespace prometheus
         kubectl delete -R -f cadvisor/
+        helm uninstall postgres-exporter -n prometheus
     fi
 }
 
