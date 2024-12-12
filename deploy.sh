@@ -20,7 +20,6 @@ install_prometheus() {
           --set server.persistentVolume.storageClass="gp2"
 
         kubectl get pods -n monitoring
-        kubectl apply -f ingress/${ENVIROMENT}-prometheus-ingress.yml --namespace monitoring
 
         # Install/upgrade Grafana
         helm repo add grafana https://grafana.github.io/helm-charts
@@ -35,7 +34,9 @@ install_prometheus() {
           --set nodeSelector."nodegroup_type"="web_large"
 
         kubectl get pods -n monitoring | grep grafana
-        kubectl apply -f ingress/${ENVIROMENT}-grafana-ingress.yml --namespace monitoring
+
+        # Create ingress
+        kubectl apply -f ingress/${ENVIROMENT}-ingress.yml --namespace monitoring
     fi
 }
 
@@ -44,6 +45,8 @@ delete_prometheus() {
     if [[ $confirm == [Yy] ]]; then
         helm delete prometheus --namespace monitoring
         helm delete grafana --namespace monitoring
+        kubectl apply -f ingress/${ENVIROMENT}-prometheus-ingress.yml --namespace monitoring
+        kubectl apply -f ingress/${ENVIROMENT}-grafana-ingress.yml
     fi
 }
 
