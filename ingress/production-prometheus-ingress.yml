@@ -9,7 +9,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: xx.openhistoricalmap.org
+    - host: prometheus.openhistoricalmap.org
       http:
         paths:
           - path: /
