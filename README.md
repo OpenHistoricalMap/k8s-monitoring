@@ -36,3 +36,41 @@ Result:
 https://prometheus.openhistoricalmap.org/
 
 ![image](https://github.com/user-attachments/assets/ca986706-5a56-4f2d-9f1c-148b602a053a)
+
+
+
+## Adding Hetzner node exporter
+
+
+Hetzner server is going to be installed manually the exporter
+
+```sh
+wget https://github.com/prometheus/node_exporter/releases/download/v1.6.1/node_exporter-1.6.1.linux-amd64.tar.gz
+tar -xvzf node_exporter-1.6.1.linux-amd64.tar.gz
+sudo cp node_exporter-1.6.1.linux-amd64/node_exporter /usr/local/bin/
+sudo useradd --no-create-home --shell /bin/false node_exporter
+sudo nano /etc/systemd/system/node_exporter.service
+sudo systemctl daemon-reload
+sudo systemctl start node_exporter
+sudo systemctl enable node_exporter
+sudo systemctl status node_exporter
+```
+- In  monitoring namespace edit prometheus-server ConfigMap 
+
+```sh
+kubectl edit cm prometheus-server -n monitoring
+```
+
+
+```sh
+    scrape_configs:
+    - job_name: node-exporter-external
+      scrape_interval: 1m
+      scrape_timeout: 10s
+      metrics_path: /metrics
+      scheme: http
+      static_configs:
+        - targets:
+          - "<HETZNER_IP>:9100"
+    ....
+```
