@@ -3,3 +3,4 @@ values.yaml
 configMaps/*
 !configMaps/*.json
 .DS_Store
+auth

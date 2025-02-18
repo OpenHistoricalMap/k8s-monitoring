@@ -20,7 +20,9 @@ This will install Prometheus, Grafana.
 
 
 ```sh
+export GRAFANA_ADMINPASSWORD=1234
 export ENVIROMENT=staging
+export NODEGROUP_TYPE=web_medium
 #export ENVIROMENT=Production
 ./deploy.sh create
 ## Delete apps
