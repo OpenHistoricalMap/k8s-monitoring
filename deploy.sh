@@ -3,7 +3,6 @@ set -e
 
 export GRAFANA_ADMINPASSWORD="${GRAFANA_ADMINPASSWORD:-1234}"
 export CLUSTER_NAME=$(kubectl config current-context)
-export ENVIRONMENT="${ENVIRONMENT:-staging}"
 export NODEGROUP_TYPE="${NODEGROUP_TYPE:-web_large}"
 
 kubectl get namespace monitoring || kubectl create namespace monitoring
@@ -17,9 +16,9 @@ install_monitoring() {
         helm upgrade --install prometheus prometheus-community/prometheus \
             --namespace monitoring \
             --set server.persistentVolume.enabled=true \
-            --set server.persistentVolume.size=20Gi \
+            --set server.persistentVolume.size=40Gi \
             --set server.persistentVolume.storageClass="gp2" \
-            --set server.retention=30d \
+            --set server.retention=60d \
             --set nodeSelector."nodegroup_type"="$NODEGROUP_TYPE"
 
         kubectl get pods -n monitoring | grep prometheus
@@ -30,7 +29,7 @@ install_monitoring() {
         helm upgrade --install grafana grafana/grafana \
             --namespace monitoring \
             --set persistence.enabled=true \
-            --set persistence.size=20Gi \
+            --set persistence.size=40Gi \
             --set persistence.storageClass="standard" \
             --set-string adminPassword="$GRAFANA_ADMINPASSWORD" \
             --set forceSecretRewrite=true \
@@ -44,17 +43,17 @@ install_monitoring() {
         helm upgrade --install loki grafana/loki-stack \
             --namespace monitoring \
             --set loki.persistence.enabled=true \
-            --set loki.persistence.size=20Gi \
+            --set loki.persistence.size=40Gi \
             --set loki.persistence.storageClassName="gp2" \
             --set promtail.enabled=true \
             --set nodeSelector."nodegroup_type"="$NODEGROUP_TYPE" \
             --set loki.config.table_manager.retention_deletes_enabled=true \
-            --set loki.config.table_manager.retention_period=30d
+            --set loki.config.table_manager.retention_period=60d
 
         kubectl get pods -n monitoring | grep loki
 
         # Apply Ingress for Loki, Prometheus, and Grafana
-        kubectl apply -f ingress/${ENVIRONMENT}-ingress.yml --namespace monitoring
+        kubectl apply -f ingress/${ENVIROMENT}-ingress.yml --namespace monitoring
     fi
 }
 
@@ -64,7 +63,7 @@ delete_monitoring() {
         helm delete prometheus --namespace monitoring
         helm delete grafana --namespace monitoring
         helm delete loki --namespace monitoring
-        kubectl delete -f ingress/${ENVIRONMENT}-ingress.yml --namespace monitoring
+        kubectl delete -f ingress/${ENVIROMENT}-ingress.yml --namespace monitoring
     fi
 }
 
