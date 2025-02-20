@@ -1,0 +1,960 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 2,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "LOKI_DATASET_ID"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#ffffff",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "LOKI_DATASET_ID"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "count_over_time(\n  {job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"} \n  |~ \"/api/0\\\\.6/changeset/[0-9]+/upload\" [${time_interval}]\n)",
+          "legendFormat": "Uploads",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Number of Uploads to OHM in  ${time_interval}",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "LOKI_DATASET_ID"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "text",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "id": 9,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "LOKI_DATASET_ID"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "count_over_time(\n  {job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"}\n  |~ \"/api/0\\\\.6/(map|node/[0-9]+/ways|way/[0-9]+/full|relation/[0-9]+/full|node/[0-9]+/relations|way/[0-9]+/relations|relation/[0-9]+/relations|node/[0-9]+/history|way/[0-9]+/history|relation/[0-9]+/history|changeset/[0-9]+|nodes|ways|relations)\"\n  [${time_interval}]\n)",
+          "hide": false,
+          "legendFormat": "Downloads",
+          "queryType": "range",
+          "refId": "B"
+        }
+      ],
+      "title": "Number of Downloads  to OHM in  ${time_interval}",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "LOKI_DATASET_ID"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "text",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 5,
+        "x": 8,
+        "y": 0
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "LOKI_DATASET_ID"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "count_over_time(\n  {job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"} \n  |~ \"/api/0\\\\.6\" [${time_interval}]\n)",
+          "hide": false,
+          "legendFormat": "openhistoricalmap.org/api/0.6",
+          "queryType": "range",
+          "refId": "B"
+        }
+      ],
+      "title": "Number of requests in OHM/api/0.6  in  $time_interval",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "LOKI_DATASET_ID"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "text",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 5,
+        "x": 13,
+        "y": 0
+      },
+      "id": 11,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "LOKI_DATASET_ID"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "count_over_time(\n  {job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"} \n  |~ \"api\\\\.openhistoricalmap\\\\.org|www\\\\.openhistoricalmap\\\\.org|openhistoricalmap\\\\.org\" \n  [${time_interval}]\n)",
+          "legendFormat": "openhistoricalmap.org",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Number of requests in ohm/*  in $time_interval",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "LOKI_DATASET_ID"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "text",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 15,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "LOKI_DATASET_ID"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum(\n sum by (zoom) (\n  count_over_time(\n    {job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"} \n    | regexp \".*\\\\/maps\\\\/(osm|ne)\\\\/(?P<zoom>0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20)\\\\/[0-9]+\\\\/[0-9]+\\\\.pbf\"\n    [${time_interval}]\n  )\n) unless sum by (zoom) (\n  count_over_time({job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"} [${time_interval}])\n)\n)",
+          "legendFormat": "",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Number of requests in vtiles  in $time_interval",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "LOKI_DATASET_ID"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "id": 14,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.5.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "LOKI_DATASET_ID"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum by (zoom) (\n  count_over_time(\n    {job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"} \n    | regexp \".*\\\\/maps\\\\/(osm|ne)\\\\/(?P<zoom>0|1|2|3|4|5|6|7|8|9)\\\\/[0-9]+\\\\/[0-9]+\\\\.pbf\"\n    [${time_interval}]\n  )\n) unless sum by (zoom) (\n  count_over_time({job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"} [${time_interval}])\n)",
+          "hide": false,
+          "legendFormat": "zoom={{zoom}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Number of requests to Vtiles  in the last $time_interval",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "LOKI_DATASET_ID"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 16,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.5.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "LOKI_DATASET_ID"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum by (zoom) (\n  count_over_time(\n    {job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"} \n    | regexp \".*\\\\/maps\\\\/(osm|ne)\\\\/(?P<zoom>10|11|12|13|14|15|16|17|18|19|20)\\\\/[0-9]+\\\\/[0-9]+\\\\.pbf\"\n    [${time_interval}]\n  )\n) unless sum by (zoom) (\n  count_over_time({job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"} [${time_interval}])\n)",
+          "hide": false,
+          "legendFormat": "zoom={{zoom}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "LOKI_DATASET_ID"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "purple",
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "LOKI_DATASET_ID"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "count_over_time(\n  {job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"} \n  |~ \"api\\\\.openhistoricalmap\\\\.org|www\\\\.openhistoricalmap\\\\.org|openhistoricalmap\\\\.org\" \n  [${time_interval}]\n)",
+          "legendFormat": "openhistoricalmap.org",
+          "queryType": "range",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "LOKI_DATASET_ID"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "count_over_time(\n  {job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"} \n  |~ \"/api/0\\\\.6\" [${time_interval}]\n)",
+          "hide": false,
+          "legendFormat": "openhistoricalmap.org/api/0.6",
+          "queryType": "range",
+          "refId": "B"
+        }
+      ],
+      "title": "Number of requests in openhistoricalmap.org and openhistoricalmap.org/api/0.6",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "LOKI_DATASET_ID"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "purple",
+            "mode": "fixed"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 11,
+        "x": 0,
+        "y": 27
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "LOKI_DATASET_ID"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "count_over_time(\n  {job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"}\n  |~ \"/api/0\\\\.6/(map|node/[0-9]+/ways|way/[0-9]+/full|relation/[0-9]+/full|node/[0-9]+/relations|way/[0-9]+/relations|relation/[0-9]+/relations|node/[0-9]+/history|way/[0-9]+/history|relation/[0-9]+/history|changeset/[0-9]+|nodes|ways|relations)\"\n  [${time_interval}]\n)",
+          "hide": false,
+          "legendFormat": "Downloads",
+          "queryType": "range",
+          "refId": "B"
+        }
+      ],
+      "title": "Number of Downloads  to OHM ",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "LOKI_DATASET_ID"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Number of Requests",
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 18,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 13,
+        "x": 11,
+        "y": 27
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "LOKI_DATASET_ID"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "count_over_time(\n  {job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"} \n  |~ \"/api/0\\\\.6/changeset/[0-9]+/upload\" [${time_interval}]\n)",
+          "legendFormat": "Uploads",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Number of Uploads to OHM",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "LOKI_DATASET_ID"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": true,
+            "axisCenteredZero": false,
+            "axisColorMode": "series",
+            "axisLabel": "requests",
+            "axisPlacement": "left",
+            "axisSoftMin": 12,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 34,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "fieldMinMax": true,
+          "mappings": [],
+          "noValue": "zoom",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 20,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Last",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "LOKI_DATASET_ID"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum by (zoom) (\n  count_over_time(\n    {job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"} \n    | regexp \".*\\\\/maps\\\\/osm\\\\/(?P<zoom>[0-9]+)\\\\/[0-9]+\\\\/[0-9]+\\\\.pbf\"\n    [${time_interval}]\n  )\n) unless sum by (zoom) (count_over_time({job=\"ingress-nginx/ingress-nginx\", stream=\"stdout\"} [${time_interval}]))",
+          "legendFormat": "zoom={{zoom}}",
+          "queryType": "range",
+          "refId": "A",
+          "step": ""
+        }
+      ],
+      "title": "Requests per minute by Zoom Level (OHM Tiles)",
+      "type": "timeseries"
+    }
+  ],
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 40,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "1m",
+          "value": "1m"
+        },
+        "label": "Time Interval",
+        "name": "time_interval",
+        "options": [
+          {
+            "selected": false,
+            "text": "1s",
+            "value": "1s"
+          },
+          {
+            "selected": true,
+            "text": "1m",
+            "value": "1m"
+          },
+          {
+            "selected": false,
+            "text": "5m",
+            "value": "5m"
+          },
+          {
+            "selected": false,
+            "text": "10m",
+            "value": "10m"
+          },
+          {
+            "selected": false,
+            "text": "1h",
+            "value": "1h"
+          }
+        ],
+        "query": "1s, 1m, 5m, 10m, 1h",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "OHM Ingress",
+  "uid": "cedjtfo7zbrpca",
+  "version": 53,
+  "weekStart": ""
+}
