@@ -3,59 +3,76 @@ set -e
 
 export GRAFANA_ADMINPASSWORD="${GRAFANA_ADMINPASSWORD:-1234}"
 export CLUSTER_NAME=$(kubectl config current-context)
-export ENVIROMENT="${ENVIROMENT:-staging}"
+export NODEGROUP_TYPE="${NODEGROUP_TYPE:-web_large}"
 
 kubectl get namespace monitoring || kubectl create namespace monitoring
 
-install_prometheus() {
-    read -p "Are you sure you want to upgrade/install prometheus in CLUSTER \"${CLUSTER_NAME}\"? (y/n): " confirm
+install_monitoring() {
+    read -p "Are you sure you want to upgrade/install Prometheus, Grafana, and Loki in CLUSTER \"${CLUSTER_NAME}\"? (y/n): " confirm
     if [[ $confirm == [Yy] ]]; then
-        # Install/upgrade Prometheus
+        # Install/Upgrade Prometheus
         helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
         helm repo update
         helm upgrade --install prometheus prometheus-community/prometheus \
-          --namespace monitoring \
-          --set server.persistentVolume.enabled=true \
-          --set server.persistentVolume.size=10Gi \
-          --set server.persistentVolume.storageClass="gp2"
+            --namespace monitoring \
+            --set server.persistentVolume.enabled=true \
+            --set server.persistentVolume.size=40Gi \
+            --set server.persistentVolume.storageClass="gp2" \
+            --set server.retention=60d \
+            --set nodeSelector."nodegroup_type"="$NODEGROUP_TYPE"
 
-        kubectl get pods -n monitoring
+        kubectl get pods -n monitoring | grep prometheus
 
-        # Install/upgrade Grafana
+        # Install/Upgrade Grafana
         helm repo add grafana https://grafana.github.io/helm-charts
         helm repo update
         helm upgrade --install grafana grafana/grafana \
-          --namespace monitoring \
-          --set persistence.enabled=true \
-          --set persistence.size=10Gi \
-          --set persistence.storageClass="standard" \
-          --set-string adminPassword="$GRAFANA_ADMINPASSWORD" \
-           --set forceSecretRewrite=true \
-          --set nodeSelector."nodegroup_type"="web_large"
+            --namespace monitoring \
+            --set persistence.enabled=true \
+            --set persistence.size=40Gi \
+            --set persistence.storageClass="standard" \
+            --set-string adminPassword="$GRAFANA_ADMINPASSWORD" \
+            --set forceSecretRewrite=true \
+            --set nodeSelector."nodegroup_type"="$NODEGROUP_TYPE"
 
         kubectl get pods -n monitoring | grep grafana
 
-        # Create ingress
+        # Install/Upgrade Loki (without adding as a Grafana datasource)
+        helm repo add grafana https://grafana.github.io/helm-charts
+        helm repo update
+        helm upgrade --install loki grafana/loki-stack \
+            --namespace monitoring \
+            --set loki.persistence.enabled=true \
+            --set loki.persistence.size=40Gi \
+            --set loki.persistence.storageClassName="gp2" \
+            --set promtail.enabled=true \
+            --set nodeSelector."nodegroup_type"="$NODEGROUP_TYPE" \
+            --set loki.config.table_manager.retention_deletes_enabled=true \
+            --set loki.config.table_manager.retention_period=60d
+
+        kubectl get pods -n monitoring | grep loki
+
+        # Apply Ingress for Loki, Prometheus, and Grafana
         kubectl apply -f ingress/${ENVIROMENT}-ingress.yml --namespace monitoring
     fi
 }
 
-delete_prometheus() {
-    read -p "Are you sure you want to delete prometheus and grafana from CLUSTER \"${CLUSTER_NAME}\"? (y/n): " confirm
+delete_monitoring() {
+    read -p "Are you sure you want to delete Prometheus, Grafana, and Loki from CLUSTER \"${CLUSTER_NAME}\"? (y/n): " confirm
     if [[ $confirm == [Yy] ]]; then
         helm delete prometheus --namespace monitoring
         helm delete grafana --namespace monitoring
-        kubectl apply -f ingress/${ENVIROMENT}-prometheus-ingress.yml --namespace monitoring
-        kubectl apply -f ingress/${ENVIROMENT}-grafana-ingress.yml
+        helm delete loki --namespace monitoring
+        kubectl delete -f ingress/${ENVIROMENT}-ingress.yml --namespace monitoring
     fi
 }
 
 ### Main
 ACTION=${1:-default}
 if [ "$ACTION" == "create" ]; then
-    install_prometheus
+    install_monitoring
 elif [ "$ACTION" == "delete" ]; then
-    delete_prometheus
+    delete_monitoring
 else
     echo "The action is unknown."
 fi
