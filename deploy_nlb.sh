@@ -3,7 +3,7 @@ set -e
 
 export GRAFANA_ADMINPASSWORD="${GRAFANA_ADMINPASSWORD:-1234}"
 export CLUSTER_NAME=$(kubectl config current-context)
-export NODEGROUP_TYPE="${NODEGROUP_TYPE:-web_large}"
+export NODEGROUP_TYPE="${NODEGROUP_TYPE:-downstream_apps_medium}"
 
 kubectl get namespace monitoring || kubectl create namespace monitoring
 
@@ -11,14 +11,15 @@ install_monitoring() {
     read -p "Are you sure you want to upgrade/install Prometheus, Grafana, and Loki in CLUSTER \"${CLUSTER_NAME}\"? (y/n): " confirm
     if [[ $confirm == [Yy] ]]; then
         # Install/Upgrade Prometheus
+        ############NLB##############
         helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
         helm repo update
         helm upgrade --install prometheus prometheus-community/prometheus \
             --namespace monitoring \
             --set server.persistentVolume.enabled=true \
             --set server.persistentVolume.size=40Gi \
-            --set server.persistentVolume.storageClass="gp2" \
-            --set server.retention=60d \
+            --set server.persistentVolume.storageClass="gp3-wffc" \
+            --set server.retention=30d \
             --set nodeSelector."nodegroup_type"="$NODEGROUP_TYPE"
 
         kubectl get pods -n monitoring | grep prometheus
@@ -37,22 +38,22 @@ install_monitoring() {
 
         kubectl get pods -n monitoring | grep grafana
 
-        # Install/Upgrade Loki (without adding as a Grafana datasource)
+        Install/Upgrade Loki (without adding as a Grafana datasource)
         helm repo add grafana https://grafana.github.io/helm-charts
         helm repo update
         helm upgrade --install loki grafana/loki-stack \
             --namespace monitoring \
             --set loki.persistence.enabled=true \
             --set loki.persistence.size=40Gi \
-            --set loki.persistence.storageClassName="gp2" \
+            --set loki.persistence.storageClassName="gp3-wffc" \
             --set promtail.enabled=true \
             --set nodeSelector."nodegroup_type"="$NODEGROUP_TYPE" \
             --set loki.config.table_manager.retention_deletes_enabled=true \
-            --set loki.config.table_manager.retention_period=60d
+            --set loki.config.table_manager.retention_period=30d
 
         kubectl get pods -n monitoring | grep loki
 
-        # Apply Ingress for Loki, Prometheus, and Grafana
+        Apply Ingress for Loki, Prometheus, and Grafana
         kubectl apply -f ingress/${ENVIROMENT}-ingress.yml --namespace monitoring
     fi
 }
@@ -61,7 +62,7 @@ delete_monitoring() {
     read -p "Are you sure you want to delete Prometheus, Grafana, and Loki from CLUSTER \"${CLUSTER_NAME}\"? (y/n): " confirm
     if [[ $confirm == [Yy] ]]; then
         helm delete prometheus --namespace monitoring
-        helm delete grafana --namespace monitoring
+        # helm delete grafana --namespace monitoring
         helm delete loki --namespace monitoring
         kubectl delete -f ingress/${ENVIROMENT}-ingress.yml --namespace monitoring
     fi

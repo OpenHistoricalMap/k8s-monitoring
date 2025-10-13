@@ -21,19 +21,23 @@ This setup will install Prometheus and Grafana for monitoring your Kubernetes cl
 
 ```sh
 export GRAFANA_ADMINPASSWORD=1234
-export NODEGROUP_TYPE=web_large
+export NODEGROUP_TYPE=downstream_apps_medium
 export ENVIRONMENT=production
-./deploy.sh create
+
+# ./deploy_nlb.sh create
+# ./deploy_alb.sh create
 ```
 
 ## Staging Deployment
 
 ```sh
 export GRAFANA_ADMINPASSWORD=1234
-export NODEGROUP_TYPE=web_large
+export NODEGROUP_TYPE=downstream_apps_medium
 export ENVIRONMENT=staging
 
-./deploy.sh create
+# ./deploy_nlb.sh create
+# ./deploy_alb.sh create
+
 ```
 
 
