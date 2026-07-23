@@ -1,0 +1,50 @@
+# Grafana values for k3s (production).
+# Rendered with envsubst by deploy_k3s.sh (only GRAFANA_ADMINPASSWORD is substituted).
+persistence:
+  enabled: true
+  size: 20Gi
+  storageClassName: local-path
+
+adminPassword: "${GRAFANA_ADMINPASSWORD}"
+
+# Exposed through the Cloudflare tunnel, not an Ingress.
+# In Cloudflare Zero Trust, add a Public Hostname on tunnel ohm-hetzner-app-production:
+#   monitoring.openhistoricalmap.org -> HTTP -> grafana.monitoring.svc.cluster.local:80
+ingress:
+  enabled: false
+
+grafana.ini:
+  server:
+    root_url: https://monitoring.openhistoricalmap.org
+  # Public read-only dashboards for the community; editing still requires login.
+  auth.anonymous:
+    enabled: true
+    org_role: Viewer
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        # Fixed uid: the dashboards in dashboards/ reference PROMETHEUS_SOURCE_ID,
+        # replaced with this value by deploy_k3s.sh.
+        uid: prometheus
+        access: proxy
+        url: http://prometheus-server.monitoring.svc.cluster.local
+        isDefault: true
+
+# Load dashboards from ConfigMaps labeled grafana_dashboard=1.
+# deploy_k3s.sh creates them from the dashboards/ folder of this repo.
+sidecar:
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    searchNamespace: monitoring
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi

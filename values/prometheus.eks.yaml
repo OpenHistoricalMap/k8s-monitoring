@@ -1,0 +1,31 @@
+# Minimal Prometheus "agent" for EKS: no Grafana, no Alertmanager, no history.
+# Scrapes the local cluster (kube-state-metrics, cadvisor, node-exporter) and
+# pushes everything to the central Prometheus in k3s via remote_write.
+# Rendered with envsubst by the command in the README (CF_ACCESS_* vars).
+server:
+  retention: 6h
+  global:
+    external_labels:
+      cluster: aws-eks
+  persistentVolume:
+    enabled: true
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+  remoteWrite:
+    # e.g. https://prometheus.ohmstaging.org/api/v1/write (staging)
+    #      https://prometheus.openhistoricalmap.org/api/v1/write (production)
+    - url: "${REMOTE_WRITE_URL}"
+      headers:
+        CF-Access-Client-Id: "${CF_ACCESS_CLIENT_ID}"
+        CF-Access-Client-Secret: "${CF_ACCESS_CLIENT_SECRET}"
+
+alertmanager:
+  enabled: false
+
+prometheus-pushgateway:
+  enabled: false

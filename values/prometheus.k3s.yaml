@@ -1,0 +1,97 @@
+server:
+  retention: 30d
+  global:
+    external_labels:
+      cluster: k3s
+  # Accept remote_write from the EKS agent (see values/prometheus.eks.yaml).
+  extraFlags:
+    - web.enable-lifecycle
+    - web.enable-remote-write-receiver
+  persistentVolume:
+    enabled: true
+    size: 40Gi
+    storageClass: local-path
+  resources:
+    requests:
+      cpu: 200m
+      memory: 1Gi
+    limits:
+      memory: 3Gi
+  # No ingress: access via port-forward or a Cloudflare tunnel Public Hostname later.
+  ingress:
+    enabled: false
+
+alertmanager:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: local-path
+  config:
+    route:
+      receiver: default
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 3h
+      # Uncomment when the heartbeat URL exists (Phase 3 of the alerts plan):
+      # routes:
+      #   - receiver: heartbeat
+      #     matchers: ['alertname="Watchdog"']
+      #     repeat_interval: 1m
+    receivers:
+      - name: default
+        # Fill in when the Slack webhook is created (issue #1000):
+        # slack_configs:
+        #   - api_url: <SLACK_WEBHOOK_URL>
+        #     channel: '#ohm-alerts'
+        #     send_resolved: true
+      # - name: heartbeat
+      #   webhook_configs:
+      #     - url: <HEARTBEAT_URL>
+
+serverFiles:
+  alerting_rules.yml:
+    groups:
+      - name: ohm-kubernetes
+        rules:
+          - alert: KubePodCrashLooping
+            expr: increase(kube_pod_container_status_restarts_total[15m]) > 3
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
+          - alert: KubePodNotReady
+            expr: sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"}) > 0
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} not ready for 5m"
+          - alert: KubeContainerOOMKilled
+            expr: kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Container {{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }} was OOMKilled"
+          - alert: KubeNodeNotReady
+            expr: kube_node_status_condition{condition="Ready", status="true"} == 0
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Node {{ $labels.node }} is not Ready"
+          - alert: NodeFilesystemAlmostFull
+            expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) < 0.15
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Disk on {{ $labels.instance }} ({{ $labels.mountpoint }}) is >85% full"
+          - alert: Watchdog
+            expr: vector(1)
+            labels:
+              severity: none
+            annotations:
+              summary: "Always-firing alert for the external heartbeat (dead man's switch)"
