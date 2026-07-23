@@ -1,12 +1,14 @@
 #!/bin/bash
 # Install the minimal Prometheus agent on EKS: it scrapes that cluster and
 # pushes everything to the central Prometheus in k3s (values/prometheus.eks.yaml).
-# Usage:
-#   export REMOTE_WRITE_URL=https://prometheus.ohmstaging.org/api/v1/write
-#   export CF_ACCESS_CLIENT_ID=...
-#   export CF_ACCESS_CLIENT_SECRET=...
+# Usage: copy .env.example to .env, fill it in, then:
 #   ./deploy_eks.sh create
 set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    set -a; source "$SCRIPT_DIR/.env"; set +a
+fi
 
 CLUSTER_NAME=$(kubectl config current-context)
 

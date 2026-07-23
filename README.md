@@ -13,8 +13,7 @@ Installs into the `monitoring` namespace:
 ### Deploy
 
 ```sh
-export GRAFANA_ADMINPASSWORD=...
-
+cp .env.example .env   # fill in credentials (gitignored)
 ./deploy_k3s.sh create
 ```
 
@@ -43,9 +42,6 @@ One-time setup in Cloudflare:
 Install the agent (kubectl context must be the EKS cluster):
 
 ```sh
-export REMOTE_WRITE_URL=https://prometheus.ohmstaging.org/api/v1/write   # or prometheus.openhistoricalmap.org
-export CF_ACCESS_CLIENT_ID=...
-export CF_ACCESS_CLIENT_SECRET=...
-
+# REMOTE_WRITE_URL and CF_ACCESS_* come from .env
 ./deploy_eks.sh create
 ```

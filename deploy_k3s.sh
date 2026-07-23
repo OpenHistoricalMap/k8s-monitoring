@@ -1,12 +1,23 @@
 #!/bin/bash
 # Deploy Prometheus + Grafana on the k3s cluster.
-# Usage:
-#   export GRAFANA_ADMINPASSWORD=...
+# Usage: copy .env.example to .env, fill it in, then:
 #   ./deploy_k3s.sh create
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    set -a; source "$SCRIPT_DIR/.env"; set +a
+fi
+
 export GRAFANA_ADMINPASSWORD="${GRAFANA_ADMINPASSWORD:-1234}"
+export ALERT_EMAIL_TO="${ALERT_EMAIL_TO:-}"
+export SMTP_USERNAME="${SMTP_USERNAME:-}"
+export SMTP_PASSWORD="${SMTP_PASSWORD:-}"
 CLUSTER_NAME=$(kubectl config current-context)
+
+if [ -z "$ALERT_EMAIL_TO" ] || [ -z "$SMTP_USERNAME" ] || [ -z "$SMTP_PASSWORD" ]; then
+    echo "WARNING: ALERT_EMAIL_TO/SMTP_USERNAME/SMTP_PASSWORD not set, alert emails will not be delivered."
+fi
 
 install_monitoring() {
     read -p "Install/upgrade Prometheus and Grafana in CLUSTER \"${CLUSTER_NAME}\"? (y/n): " confirm
@@ -19,8 +30,9 @@ install_monitoring() {
     helm repo add grafana-community https://grafana-community.github.io/helm-charts
     helm repo update
 
-    helm upgrade --install prometheus prometheus-community/prometheus \
-        -n monitoring -f values/prometheus.k3s.yaml
+    envsubst '${ALERT_EMAIL_TO} ${SMTP_USERNAME} ${SMTP_PASSWORD}' < values/prometheus.k3s.yaml | \
+        helm upgrade --install prometheus prometheus-community/prometheus \
+        -n monitoring -f -
 
     # Dashboards as ConfigMaps, picked up by the Grafana sidecar
     # (fix the datasource uid placeholder in the JSONs).

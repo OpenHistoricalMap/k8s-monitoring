@@ -1,4 +1,6 @@
 server:
+  # Public URL used in alert GeneratorURL links (behind Cloudflare Access).
+  baseURL: https://prometheus.openhistoricalmap.org
   retention: 30d
   global:
     external_labels:
@@ -23,6 +25,9 @@ server:
 
 alertmanager:
   enabled: true
+  # Public URL used in email links; Alertmanager itself is not exposed, so
+  # point people at Grafana instead of the unreachable pod hostname.
+  baseURL: https://monitoring.openhistoricalmap.org
   persistence:
     enabled: true
     size: 2Gi
@@ -40,11 +45,16 @@ alertmanager:
       #     repeat_interval: 1m
     receivers:
       - name: default
-        # Fill in when the Slack webhook is created (issue #1000):
-        # slack_configs:
-        #   - api_url: <SLACK_WEBHOOK_URL>
-        #     channel: '#ohm-alerts'
-        #     send_resolved: true
+        # AWS SES SMTP, same account the website mailer uses; the sender domain
+        # noreply.openhistoricalmap.org is already verified in SES.
+        email_configs:
+          - to: "${ALERT_EMAIL_TO}"
+            from: "alerts@noreply.openhistoricalmap.org"
+            smarthost: email-smtp.us-east-1.amazonaws.com:587
+            auth_username: "${SMTP_USERNAME}"
+            auth_password: "${SMTP_PASSWORD}"
+            require_tls: true
+            send_resolved: true
       # - name: heartbeat
       #   webhook_configs:
       #     - url: <HEARTBEAT_URL>
@@ -69,7 +79,12 @@ serverFiles:
             annotations:
               summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} not ready for 5m"
           - alert: KubeContainerOOMKilled
-            expr: kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1
+            # last_terminated_reason never expires on its own; correlate with a
+            # recent restart so the alert only fires for fresh OOM events.
+            expr: >-
+              (kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1)
+              and on (cluster, namespace, pod, container)
+              (increase(kube_pod_container_status_restarts_total[1h]) > 0)
             for: 1m
             labels:
               severity: warning
