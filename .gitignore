@@ -4,3 +4,4 @@ configMaps/*
 !configMaps/*.json
 .DS_Store
 auth
+.env
