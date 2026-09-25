@@ -1,0 +1,1777 @@
+{
+  "uid": "ohm-usage",
+  "title": "OHM usage",
+  "description": "How many people use OHM and how much each hostname (subdomain) is used. Source: Cloudflare, via the cloudflare-stats CronJob.",
+  "tags": [
+    "ohm",
+    "cloudflare"
+  ],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "host",
+        "label": "Host",
+        "type": "custom",
+        "query": "openhistoricalmap.org,www,api,vtiles,static-tiles,nominatim,overpass-api,overpass-turbo,tasks,tm-api,taginfo,forum,planet,planet-stats,osmcha,embed,level0",
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "options": [
+          {
+            "text": "All",
+            "value": "$__all",
+            "selected": true
+          },
+          {
+            "text": "openhistoricalmap.org",
+            "value": "openhistoricalmap.org",
+            "selected": false
+          },
+          {
+            "text": "www",
+            "value": "www",
+            "selected": false
+          },
+          {
+            "text": "api",
+            "value": "api",
+            "selected": false
+          },
+          {
+            "text": "vtiles",
+            "value": "vtiles",
+            "selected": false
+          },
+          {
+            "text": "static-tiles",
+            "value": "static-tiles",
+            "selected": false
+          },
+          {
+            "text": "nominatim",
+            "value": "nominatim",
+            "selected": false
+          },
+          {
+            "text": "overpass-api",
+            "value": "overpass-api",
+            "selected": false
+          },
+          {
+            "text": "overpass-turbo",
+            "value": "overpass-turbo",
+            "selected": false
+          },
+          {
+            "text": "tasks",
+            "value": "tasks",
+            "selected": false
+          },
+          {
+            "text": "tm-api",
+            "value": "tm-api",
+            "selected": false
+          },
+          {
+            "text": "taginfo",
+            "value": "taginfo",
+            "selected": false
+          },
+          {
+            "text": "forum",
+            "value": "forum",
+            "selected": false
+          },
+          {
+            "text": "planet",
+            "value": "planet",
+            "selected": false
+          },
+          {
+            "text": "planet-stats",
+            "value": "planet-stats",
+            "selected": false
+          },
+          {
+            "text": "osmcha",
+            "value": "osmcha",
+            "selected": false
+          },
+          {
+            "text": "embed",
+            "value": "embed",
+            "selected": false
+          },
+          {
+            "text": "level0",
+            "value": "level0",
+            "selected": false
+          }
+        ],
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [
+    {
+      "title": "OHM usage",
+      "type": "link",
+      "url": "/d/ohm-usage"
+    },
+    {
+      "title": "OHM clients",
+      "type": "link",
+      "url": "/d/ohm-clients"
+    },
+    {
+      "title": "OHM traffic health",
+      "type": "link",
+      "url": "/d/ohm-traffic-health"
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "People on the website (Web Analytics sessions on www; JS beacon, so most bots are out)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "People on www, yesterday",
+      "description": "Browser sessions on www.openhistoricalmap.org (Cloudflare Web Analytics, JS beacon). Simple bots and scripts do not run the beacon; headless browsers still can.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "ohm_cf_host_visits_daily{host=\"www\"}",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#2a78d6"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "People on www, last 30 days",
+      "description": "Sum of the daily sessions on www.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 1,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum_over_time((last_over_time(ohm_cf_host_visits_daily{host=\"www\"}[1d] offset -2d))[30d:1d])",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#2a78d6"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "People on www per day",
+      "description": "Sessions of real browsers on the website. api.* is left out on purpose: headless browsers scraping HTML there trigger the beacon too.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1d",
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "last_over_time(ohm_cf_host_visits_daily{host=\"www\"}[1d] offset -2d)",
+          "legendFormat": "sessions"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#2a78d6"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "row",
+      "title": "Traffic per day: requests and unique IPs (all hostnames, bots and blocked included)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Requests, yesterday",
+      "description": "Every request that reached Cloudflare for *.openhistoricalmap.org, including the ones it blocked.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "ohm_cf_requests_daily{}",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Unique IPs, yesterday",
+      "description": "Distinct client IPs across the whole zone: tiles, API, JOSM, scripts and bots. Not people.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 8,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "ohm_cf_uniques_daily{}",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Requests, last 30 days",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum_over_time((last_over_time(ohm_cf_requests_daily{}[1d] offset -2d))[30d:1d])",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Blocked by Cloudflare, yesterday",
+      "description": "Share of yesterday's requests answered with 403 by WAF / rate-limit rules.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 8,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (ohm_cf_status_requests_daily{status=\"403\"})) / sum(ohm_cf_requests_daily{})",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Requests per day",
+      "description": "Exact, from Cloudflare. Includes blocked requests.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1d",
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "last_over_time(ohm_cf_requests_daily{}[1d] offset -2d)",
+          "legendFormat": "requests"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#2a78d6"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Unique IPs per day",
+      "description": "Exact, from Cloudflare. Includes bots and scripts.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1d",
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "last_over_time(ohm_cf_uniques_daily{}[1d] offset -2d)",
+          "legendFormat": "unique IPs"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#8a8a85"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 12,
+      "type": "row",
+      "title": "Traffic per hour: requests, unique IPs and sessions (all hostnames, bots and blocked included; previous full hours, UTC)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Requests per hour, all hostnames",
+      "description": "Exact, from Cloudflare.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1h",
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "last_over_time(ohm_cf_requests_hourly[1h] offset -2h)",
+          "legendFormat": "requests"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#2a78d6"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Unique IPs per hour, all hostnames",
+      "description": "Exact, from Cloudflare. Hours do not add up: an IP active all day counts in every hour.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1h",
+      "gridPos": {
+        "x": 8,
+        "y": 21,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "last_over_time(ohm_cf_uniques_hourly[1h] offset -2h)",
+          "legendFormat": "unique IPs"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#8a8a85"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Sessions on www per hour (people)",
+      "description": "Web Analytics sessions on www in that hour. Same meaning as 'People on www' above, hourly.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1h",
+      "gridPos": {
+        "x": 16,
+        "y": 21,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "last_over_time(ohm_cf_host_visits_hourly{host=\"www\"}[1h] offset -2h)",
+          "legendFormat": "sessions"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#2a78d6"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Requests per hour by hostname (subdomain)",
+      "description": "Sampled estimate scaled to the exact hourly total. Filter with the Host selector.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1h",
+      "gridPos": {
+        "x": 0,
+        "y": 29,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "max by (host) (last_over_time(ohm_cf_host_requests_hourly{host=~\"$host\"}[1h] offset -2h))",
+          "legendFormat": "{{host}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "vtiles"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2a78d6"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "api"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#eb6834"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "www"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1baf7a"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "static-tiles"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#eda100"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "nominatim"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e87ba4"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "openhistoricalmap.org"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#008300"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "Requests per hour by response class",
+      "description": "Blocked and failing requests hour by hour. A jump in 403 = an attack being stopped; 5xx = something broke in the cluster.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1h",
+      "gridPos": {
+        "x": 12,
+        "y": 29,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (last_over_time(ohm_cf_status_requests_hourly{status=~\"2..\"}[1h] offset -2h)))",
+          "legendFormat": "2xx ok"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (last_over_time(ohm_cf_status_requests_hourly{status=~\"3..\"}[1h] offset -2h)))",
+          "legendFormat": "3xx redirect"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (last_over_time(ohm_cf_status_requests_hourly{status=\"403\"}[1h] offset -2h)))",
+          "legendFormat": "403 blocked by Cloudflare"
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (last_over_time(ohm_cf_status_requests_hourly{status=\"429\"}[1h] offset -2h)))",
+          "legendFormat": "429 rate limited"
+        },
+        {
+          "refId": "E",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (last_over_time(ohm_cf_status_requests_hourly{status=~\"4..\",status!~\"403|429\"}[1h] offset -2h)))",
+          "legendFormat": "other 4xx"
+        },
+        {
+          "refId": "F",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (last_over_time(ohm_cf_status_requests_hourly{status=~\"5..\"}[1h] offset -2h)))",
+          "legendFormat": "5xx errors"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "2xx ok"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#008300"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "3xx redirect"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2a78d6"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "403 blocked by Cloudflare"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#eb6834"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "429 rate limited"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e87ba4"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "other 4xx"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#eda100"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "5xx errors"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c62828"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 18,
+      "type": "row",
+      "title": "Traffic per day by hostname (subdomain: vtiles, api, www, nominatim, ...)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "$host",
+      "description": "Requests per day on this hostname. Sampled estimate scaled to the exact zone total.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1d",
+      "gridPos": {
+        "x": 0,
+        "y": 39,
+        "w": 6,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "max by (host) (last_over_time(ohm_cf_host_requests_daily{host=~\"$host\"}[1d] offset -2d))",
+          "legendFormat": "{{host}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#2a78d6"
+          }
+        },
+        "overrides": []
+      },
+      "repeat": "host",
+      "repeatDirection": "h",
+      "maxPerRow": 4
+    },
+    {
+      "id": 20,
+      "type": "table",
+      "title": "Requests by hostname, last 30 days",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 45,
+        "w": 8,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sort_desc(sum by (host) (sum_over_time((max by (host) (last_over_time(ohm_cf_host_requests_daily{}[1d] offset -2d)))[30d:1d])))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true
+            },
+            "renameByName": {
+              "Value": "requests (30d)"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "requests (30d)",
+            "desc": true
+          }
+        ],
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 21,
+      "type": "table",
+      "title": "Unique IPs by hostname, yesterday (sampled, undercounts)",
+      "description": "Distinct IPs among Cloudflare's sampled rows. Good for ranking hostnames against each other, not an exact total (the Free plan only has exact uniques for the whole zone).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 45,
+        "w": 8,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sort_desc(max by (host) (ohm_cf_host_unique_ips_daily))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true
+            },
+            "renameByName": {
+              "Value": "unique IPs"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "unique IPs",
+            "desc": true
+          }
+        ],
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 22,
+      "type": "table",
+      "title": "Sessions by hostname, yesterday (Web Analytics, HTML sites only)",
+      "description": "Only HTML sites carry the beacon. api = headless scrapers, not people.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 45,
+        "w": 8,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sort_desc(max by (host) (ohm_cf_host_visits_daily))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true
+            },
+            "renameByName": {
+              "Value": "sessions"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "sessions",
+            "desc": true
+          }
+        ],
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 23,
+      "type": "row",
+      "title": "Where do the requests come from? (country and device, blocked requests excluded)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 55,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 24,
+      "type": "timeseries",
+      "title": "Requests per day by country, top 10",
+      "description": "Client country from Cloudflare, ISO code. 403s excluded so a blocked scraper does not dominate. Sampled estimate.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1d",
+      "gridPos": {
+        "x": 0,
+        "y": 56,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "topk(10, max by (country) (last_over_time(ohm_cf_country_requests_daily{}[1d] offset -2d)))",
+          "legendFormat": "{{country}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 25,
+      "type": "table",
+      "title": "Requests by country, last 30 days",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 56,
+        "w": 6,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sort_desc(sum by (country) (sum_over_time((max by (country) (last_over_time(ohm_cf_country_requests_daily{}[1d] offset -2d)))[30d:1d])))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true
+            },
+            "renameByName": {
+              "Value": "requests (30d)"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "requests (30d)",
+            "desc": true
+          }
+        ],
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 26,
+      "type": "timeseries",
+      "title": "Requests per day by device",
+      "description": "Cloudflare's device classification from the User-Agent.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1d",
+      "gridPos": {
+        "x": 18,
+        "y": 56,
+        "w": 6,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "max by (device) (last_over_time(ohm_cf_device_requests_daily{}[1d] offset -2d))",
+          "legendFormat": "{{device}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "desktop"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2a78d6"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mobile"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#eb6834"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tablet"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1baf7a"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "unknown"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8a8a85"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

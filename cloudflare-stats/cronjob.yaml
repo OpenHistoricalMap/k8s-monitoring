@@ -1,0 +1,609 @@
+# Cloudflare usage stats -> Prometheus Pushgateway (+ optional S3 JSON).
+# Answers issue OpenHistoricalMap/issues#1412: requests per host, requests per
+# client app (user agent), unique visitors and real people (Web Analytics).
+# Data comes from the Cloudflare GraphQL Analytics API (works on the Free plan).
+# Runs hourly: the daily numbers are re-pushed every run, the hourly ones cover
+# the previous full hour.
+#
+# Deployed by cloudflare-stats/deploy.sh, which also creates the Secret
+# `cloudflare-stats` from ../.env (token, zone id, optional S3 target).
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflare-stats-script
+  namespace: monitoring
+data:
+  cloudflare_stats.py: |
+    #!/usr/bin/env python3
+    """Fetch Cloudflare zone analytics and push them to Pushgateway.
+
+    Daily (yesterday, UTC):
+      ohm_cf_requests_daily               requests for the whole zone (exact)
+      ohm_cf_uniques_daily                unique visitors (IPs) for the whole zone (exact)
+      ohm_cf_cached_requests_daily        requests served from Cloudflare cache
+      Host labels are short: vtiles, api, nominatim, ...; the bare domain keeps its full name.
+      ohm_cf_host_requests_daily{host}    requests per hostname (sampled estimate)
+      ohm_cf_host_unique_ips_daily{host}  distinct client IPs per hostname (sampled: a lower bound)
+      ohm_cf_agent_requests_daily{agent,blocked}  requests per client app (User-Agent family); blocked="yes" = 403 from Cloudflare
+      ohm_cf_method_requests_daily{method}          requests per HTTP method (GET, POST, PUT, ...)
+      ohm_cf_status_requests_daily{status}          requests per edge response status (200, 404, 429, ...)
+      ohm_cf_host_agent_requests_daily{host,agent}  requests per hostname and client app
+      ohm_cf_host_method_requests_daily{host,method} requests per hostname and HTTP method
+      ohm_cf_host_status_requests_daily{host,status} requests per hostname and edge response status
+      ohm_cf_country_requests_daily{country}         let-through requests per country (top 30, ISO code)
+      ohm_cf_device_requests_daily{device}           let-through requests per device type (desktop/mobile/tablet)
+      ohm_cf_host_country_requests_daily{host,country} let-through requests per hostname and country (top 15 per host)
+      ohm_cf_host_cache_requests_daily{host,cache}   requests per hostname and Cloudflare cache status
+                                                     (hit, miss, expired, stale, revalidated, dynamic, bypass, none)
+      ohm_cf_visitors_daily               people: unique visitors from Web Analytics (JS beacon, bots excluded)
+      ohm_cf_visits_daily                 people: visits from Web Analytics
+      ohm_cf_host_visits_daily{host}      people: visits per hostname from Web Analytics
+    Hourly (previous full hour, UTC):
+      ohm_cf_requests_hourly              requests for the whole zone
+      ohm_cf_uniques_hourly               unique visitors (IPs) in that hour; hours do not add up
+      ohm_cf_host_requests_hourly{host}   requests per hostname in that hour (sampled, scaled)
+      ohm_cf_visits_hourly                sessions in that hour, all HTML sites, from Web Analytics
+      ohm_cf_host_visits_hourly{host}     sessions in that hour per hostname (use host="www" for people)
+      ohm_cf_status_requests_hourly{status} requests per response status in that hour
+    Run info:
+      ohm_cf_cdn_cgi_requests_daily       requests to Cloudflare's own /cdn-cgi/ endpoints (beacon, challenges), excluded from every breakdown
+      ohm_cf_stats_day, ohm_cf_stats_hour, ohm_cf_last_success_timestamp
+    """
+    import datetime as dt
+    import json
+    import os
+    import urllib.request
+
+    CF_API = "https://api.cloudflare.com/client/v4/graphql"
+    TOKEN = os.environ["CF_API_TOKEN"]
+    ZONE = os.environ["CF_ZONE_ID"]
+    PUSHGATEWAY = os.environ.get(
+        "PUSHGATEWAY_URL",
+        "http://prometheus-prometheus-pushgateway.monitoring.svc.cluster.local:9091",
+    )
+    S3_URI = os.environ.get("S3_URI", "").rstrip("/")
+
+    # STATS_DAY=YYYY-MM-DD overrides the day (backfill); default is yesterday (UTC).
+    # DRY_RUN=1 prints what would be pushed and exits (run it from a laptop to test the token).
+    day_str = os.environ.get("STATS_DAY") or (
+        dt.datetime.now(dt.timezone.utc).date() - dt.timedelta(days=1)
+    ).isoformat()
+    day = dt.date.fromisoformat(day_str)
+    start = f"{day.isoformat()}T00:00:00Z"
+    end = f"{(day + dt.timedelta(days=1)).isoformat()}T00:00:00Z"
+
+    # Previous full hour, e.g. run at 10:05 -> 09:00-10:00.
+    hour_end = dt.datetime.now(dt.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    hour_start = hour_end - dt.timedelta(hours=1)
+    hour_iso = lambda t: t.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+    def ua_family(ua):
+        """Collapse a User-Agent string into the client app that sent it."""
+        u = (ua or "").lower()
+        rules = [
+            ("josm", "JOSM"), ("vespucci", "Vespucci"), ("qgis", "QGIS"),
+            ("maplibre", "MapLibre"), ("mapbox", "Mapbox"), ("leaflet", "Leaflet"),
+            ("openlayers", "OpenLayers"), ("tilemill", "TileMill"), ("kepler", "Kepler.gl"),
+            ("overpass turbo", "overpass-turbo"), ("osmnx", "OSMnx"), ("osmium", "osmium"),
+            ("python-requests", "python-requests"), ("python-urllib", "python-urllib"),
+            ("aiohttp", "python-aiohttp"), ("httpx", "python-httpx"), ("go-http-client", "Go"),
+            ("node-fetch", "node"), ("undici", "node"), ("axios", "node"), ("okhttp", "okhttp"),
+            ("java/", "Java"), ("curl", "curl"), ("wget", "wget"), ("postman", "Postman"),
+            ("googlebot", "bot:Google"), ("bingbot", "bot:Bing"), ("yandex", "bot:Yandex"),
+            ("duckduckbot", "bot:DuckDuckGo"), ("applebot", "bot:Apple"), ("baiduspider", "bot:Baidu"),
+            ("petalbot", "bot:Petal"), ("semrush", "bot:Semrush"), ("ahrefs", "bot:Ahrefs"),
+            ("gptbot", "bot:OpenAI"), ("claudebot", "bot:Anthropic"), ("bytespider", "bot:ByteDance"),
+            ("ccbot", "bot:CommonCrawl"), ("facebookexternalhit", "bot:Facebook"),
+            ("bot", "bot:other"), ("crawler", "bot:other"), ("spider", "bot:other"),
+            ("edg/", "browser:Edge"), ("opr/", "browser:Opera"), ("samsungbrowser", "browser:Samsung"),
+            ("firefox", "browser:Firefox"), ("chrome", "browser:Chrome"), ("safari", "browser:Safari"),
+        ]
+        if not u:
+            return "empty"
+        for needle, name in rules:
+            if needle in u:
+                return name
+        return "other"
+
+
+    def graphql(query):
+        # Values are inlined in the query: Cloudflare's schema types filters as
+        # Time/Date/string scalars, and typed variables trip on that easily.
+        body = json.dumps({"query": query}).encode()
+        req = urllib.request.Request(
+            CF_API,
+            data=body,
+            headers={
+                "Authorization": f"Bearer {TOKEN}",
+                "Content-Type": "application/json",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            out = json.load(resp)
+        if out.get("errors"):
+            raise SystemExit(f"cloudflare graphql error: {out['errors']}")
+        return out["data"]["viewer"]["zones"][0]
+
+
+    ZONE_QUERY = lambda day: f"""
+    {{
+      viewer {{
+        zones(filter: {{zoneTag: "{ZONE}"}}) {{
+          httpRequests1dGroups(limit: 1, filter: {{date: "{day}"}}) {{
+            sum {{ requests cachedRequests bytes threats pageViews }}
+            uniq {{ uniques }}
+          }}
+        }}
+      }}
+    }}
+    """
+
+    # Cloudflare's own endpoints: the Web Analytics beacon (POST /cdn-cgi/rum, ~2.7M/day)
+    # and the JS challenge (/cdn-cgi/challenge-platform/...). They never reach the
+    # origin and would show up as "POST edits on api", so every breakdown excludes them.
+    CDN_CGI = 'clientRequestPath_notlike: "/cdn-cgi/%"'
+
+
+    def adaptive(dimensions, start, end, limit=1000, include_cdn_cgi=False):
+        """Rows of httpRequestsAdaptiveGroups grouped by the given dimensions.
+
+        Adaptive datasets are sampled; yields (dims, estimated_requests) with
+        estimated_requests = count * sampleInterval.
+        """
+        extra = "" if include_cdn_cgi else ", " + CDN_CGI
+        q = f"""
+        {{
+          viewer {{
+            zones(filter: {{zoneTag: "{ZONE}"}}) {{
+              httpRequestsAdaptiveGroups(
+                limit: {limit},
+                filter: {{datetime_geq: "{start}", datetime_lt: "{end}"{extra}}},
+                orderBy: [count_DESC]
+              ) {{
+                count
+                avg {{ sampleInterval }}
+                dimensions {{ {" ".join(dimensions)} }}
+              }}
+            }}
+          }}
+        }}
+        """
+        for g in graphql(q)["httpRequestsAdaptiveGroups"]:
+            yield g["dimensions"], int(round(g["count"] * (g["avg"]["sampleInterval"] or 1)))
+
+
+    def short_host(h):
+        """vtiles.openhistoricalmap.org -> vtiles; the bare domain keeps its full name."""
+        if not h:
+            return "unknown"
+        parts = h.split(".")
+        return parts[0] if len(parts) > 2 else h
+
+    HOUR_QUERY = lambda start, end: f"""
+    {{
+      viewer {{
+        zones(filter: {{zoneTag: "{ZONE}"}}) {{
+          httpRequests1hGroups(limit: 1, filter: {{datetime_geq: "{start}", datetime_lt: "{end}"}}) {{
+            sum {{ requests }}
+            uniq {{ uniques }}
+          }}
+        }}
+      }}
+    }}
+    """
+
+    # Web Analytics (RUM): only browsers that ran the JS beacon, so bots are out.
+    # It is an account-level dataset keyed by the Web Analytics site tag, not by
+    # the zone. Needs CF_ACCOUNT_ID + CF_RUM_SITE_TAG and a token with
+    # "Account / Account Analytics / Read"; skipped when they are not set.
+    ACCOUNT = os.environ.get("CF_ACCOUNT_ID", "")
+    SITE_TAG = os.environ.get("CF_RUM_SITE_TAG", "")
+
+    RUM_QUERY = lambda start, end: f"""
+    {{
+      viewer {{
+        accounts(filter: {{accountTag: "{ACCOUNT}"}}) {{
+          rumPageloadEventsAdaptiveGroups(
+            limit: 1,
+            filter: {{siteTag: "{SITE_TAG}", datetime_geq: "{start}", datetime_lt: "{end}"}}
+          ) {{
+            count
+            sum {{ visits }}
+            avg {{ sampleInterval }}
+          }}
+        }}
+      }}
+    }}
+    """
+
+
+    def rum_groups(start_iso, end_iso, dimensions=(), limit=1):
+        """Rows of rumPageloadEventsAdaptiveGroups, or None if Web Analytics is not configured."""
+        if not (ACCOUNT and SITE_TAG):
+            return None
+        dims = f"dimensions {{ {' '.join(dimensions)} }}" if dimensions else ""
+        q = f"""
+        {{
+          viewer {{
+            accounts(filter: {{accountTag: "{ACCOUNT}"}}) {{
+              rumPageloadEventsAdaptiveGroups(
+                limit: {limit},
+                filter: {{siteTag: "{SITE_TAG}", datetime_geq: "{start_iso}", datetime_lt: "{end_iso}"}}
+              ) {{
+                count
+                sum {{ visits }}
+                avg {{ sampleInterval }}
+                {dims}
+              }}
+            }}
+          }}
+        }}
+        """
+        try:
+            body = json.dumps({"query": q}).encode()
+            req = urllib.request.Request(
+                CF_API, data=body,
+                headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+            )
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                out = json.load(resp)
+            if out.get("errors"):
+                raise SystemExit(out["errors"])
+            return out["data"]["viewer"]["accounts"][0]["rumPageloadEventsAdaptiveGroups"]
+        except SystemExit as e:
+            print(f"web analytics not available, skipping: {e}")
+            return None
+
+
+    def rum(start_iso, end_iso):
+        """Return (visits, pageloads) from Web Analytics, or (None, None) if not configured."""
+        g = rum_groups(start_iso, end_iso)
+        if g is None:
+            return None, None
+        if not g:
+            return 0, 0
+        si = g[0]["avg"]["sampleInterval"] or 1
+        # visits = sessions (closest thing to "people"); pageloads = count * sampleInterval.
+        return int(round(g[0]["sum"]["visits"] * si)), int(round(g[0]["count"] * si))
+
+
+    def rum_by(start_iso, end_iso, dimension, keyfn, limit=50):
+        """Visits per value of one Web Analytics dimension (requestHost, refererHost, ...)."""
+        out = {}
+        for g in rum_groups(start_iso, end_iso, (dimension,), limit) or []:
+            k = keyfn(g["dimensions"][dimension])
+            out[k] = out.get(k, 0) + int(round(g["sum"]["visits"] * (g["avg"]["sampleInterval"] or 1)))
+        return dict(sorted(out.items(), key=lambda kv: -kv[1]))
+
+
+    zone = graphql(ZONE_QUERY(day.isoformat()))
+    groups = zone["httpRequests1dGroups"]
+    if not groups:
+        raise SystemExit(f"no zone data for {day}; retry later (data lags a few hours)")
+    totals = groups[0]["sum"]
+    uniques = groups[0]["uniq"]["uniques"]
+
+    # count * sampleInterval overshoots on this zone (~5x vs the exact daily
+    # total on 2026-09-21), so the sampled data is only used for proportions and
+    # every breakdown is scaled to the exact zone total from httpRequests1dGroups.
+    raw_all = sum(est for _, est in adaptive(["clientRequestHTTPHost"], start, end, include_cdn_cgi=True))
+    raw_hosts = {}
+    for dims, est in adaptive(["clientRequestHTTPHost"], start, end):
+        k = short_host(dims["clientRequestHTTPHost"])
+        raw_hosts[k] = raw_hosts.get(k, 0) + est
+    raw_total = raw_all or 1
+    scale = totals["requests"] / raw_total
+    cdn_cgi_requests = int(round((raw_all - sum(raw_hosts.values())) * scale))
+    print(f"sampled total {raw_all}, exact total {totals['requests']}, scale {scale:.3f}, cdn-cgi {cdn_cgi_requests}")
+
+
+    def tally(dimensions, keyfn, limit=1000):
+        out = {}
+        for dims, est in adaptive(dimensions, start, end, limit):
+            k = keyfn(dims)
+            out[k] = out.get(k, 0) + est
+        return dict(sorted(((k, int(round(v * scale))) for k, v in out.items()), key=lambda kv: -kv[1]))
+
+    hosts = dict(sorted(((k, int(round(v * scale))) for k, v in raw_hosts.items()), key=lambda kv: -kv[1]))
+    # Per client app, split by whether Cloudflare blocked the request (403 from WAF or
+    # rate limiting). Most "Chrome" traffic is a blocked tile scraper with a fixed UA.
+    agents_blocked = tally(
+        ["userAgent", "edgeResponseStatus"],
+        lambda d: (ua_family(d["userAgent"]), "yes" if d["edgeResponseStatus"] == 403 else "no"),
+        limit=3000,
+    )
+    agents = {}
+    for (fam, _), n in agents_blocked.items():
+        agents[fam] = agents.get(fam, 0) + n
+    agents = dict(sorted(agents.items(), key=lambda kv: -kv[1]))
+    methods = tally(["clientRequestHTTPMethodName"], lambda d: d["clientRequestHTTPMethodName"] or "unknown")
+    statuses = tally(["edgeResponseStatus"], lambda d: str(d["edgeResponseStatus"]))
+    host_agents = tally(
+        ["clientRequestHTTPHost", "userAgent"],
+        lambda d: (short_host(d["clientRequestHTTPHost"]), ua_family(d["userAgent"])),
+        limit=5000,
+    )
+    host_methods = tally(
+        ["clientRequestHTTPHost", "clientRequestHTTPMethodName"],
+        lambda d: (short_host(d["clientRequestHTTPHost"]), d["clientRequestHTTPMethodName"] or "unknown"),
+    )
+
+    host_statuses = tally(
+        ["clientRequestHTTPHost", "edgeResponseStatus"],
+        lambda d: (short_host(d["clientRequestHTTPHost"]), str(d["edgeResponseStatus"])),
+        limit=2000,
+    )
+
+    # Where the let-through traffic comes from (403s excluded so a blocked scraper
+    # does not dominate). Top 30 countries; device type is desktop/mobile/tablet.
+    NOT_BLOCKED = "edgeResponseStatus_neq: 403"
+    countries = {}
+    for dims, est in adaptive(["clientCountryName", "edgeResponseStatus"], start, end, limit=3000):
+        if dims["edgeResponseStatus"] == 403:
+            continue
+        k = dims["clientCountryName"] or "unknown"
+        countries[k] = countries.get(k, 0) + int(round(est * scale))
+    countries = dict(sorted(countries.items(), key=lambda kv: -kv[1])[:30])
+    devices = {}
+    for dims, est in adaptive(["clientDeviceType", "edgeResponseStatus"], start, end, limit=200):
+        if dims["edgeResponseStatus"] == 403:
+            continue
+        k = dims["clientDeviceType"] or "unknown"
+        devices[k] = devices.get(k, 0) + int(round(est * scale))
+    host_countries = {}
+    for dims, est in adaptive(["clientRequestHTTPHost", "clientCountryName", "edgeResponseStatus"], start, end, limit=5000):
+        if dims["edgeResponseStatus"] == 403:
+            continue
+        k = (short_host(dims["clientRequestHTTPHost"]), dims["clientCountryName"] or "unknown")
+        host_countries[k] = host_countries.get(k, 0) + int(round(est * scale))
+    # keep top 15 countries per host
+    by_host = {}
+    for (h, c), n in sorted(host_countries.items(), key=lambda kv: -kv[1]):
+        by_host.setdefault(h, [])
+        if len(by_host[h]) < 15:
+            by_host[h].append((c, n))
+    host_countries = {(h, c): n for h, lst in by_host.items() for c, n in lst}
+
+    # Cache status per host: for tiles this is the number that matters
+    # (hit + stale + revalidated were served by Cloudflare without touching Martin).
+    host_cache = tally(
+        ["clientRequestHTTPHost", "cacheStatus"],
+        lambda d: (short_host(d["clientRequestHTTPHost"]), (d["cacheStatus"] or "none").lower()),
+    )
+
+    # Distinct client IPs per host. The Free plan only has exact uniques for the
+    # whole zone (httpRequests1dGroups.uniq), so this counts distinct IPs among
+    # the sampled rows: a lower bound, good for ranking hosts, not an exact total.
+    # IPs are only counted here, never stored or pushed.
+    host_ips = {}
+    for dims, _ in adaptive(["clientRequestHTTPHost", "clientIP"], start, end, limit=10000):
+        host_ips.setdefault(short_host(dims["clientRequestHTTPHost"]), set()).add(dims["clientIP"])
+    host_unique_ips = dict(sorted(((h, len(ips)) for h, ips in host_ips.items()), key=lambda kv: -kv[1]))
+
+    hour_groups = graphql(HOUR_QUERY(hour_iso(hour_start), hour_iso(hour_end)))[
+        "httpRequests1hGroups"
+    ]
+    hour_requests = hour_groups[0]["sum"]["requests"] if hour_groups else 0
+    hour_uniques = hour_groups[0]["uniq"]["uniques"] if hour_groups else 0
+
+    # Per-host requests for the previous hour (same sampled dataset, scaled to the exact hourly total).
+    raw_hour_all = sum(est for _, est in adaptive(["clientRequestHTTPHost"], hour_iso(hour_start), hour_iso(hour_end), include_cdn_cgi=True))
+    raw_hour_hosts = {}
+    for dims, est in adaptive(["clientRequestHTTPHost"], hour_iso(hour_start), hour_iso(hour_end)):
+        k = short_host(dims["clientRequestHTTPHost"])
+        raw_hour_hosts[k] = raw_hour_hosts.get(k, 0) + est
+    hour_scale = hour_requests / (raw_hour_all or 1)
+    hour_hosts = dict(sorted(((k, int(round(v * hour_scale))) for k, v in raw_hour_hosts.items()), key=lambda kv: -kv[1]))
+
+    day_visits, day_pageloads = rum(start, end)
+    hour_visits, hour_pageloads = rum(hour_iso(hour_start), hour_iso(hour_end))
+    host_visits = rum_by(start, end, "requestHost", short_host)
+    hour_host_visits = rum_by(hour_iso(hour_start), hour_iso(hour_end), "requestHost", short_host)
+
+    # Response status for the previous hour (zone-wide), scaled to the exact hourly total.
+    raw_hour_status = {}
+    for dims, est in adaptive(["edgeResponseStatus"], hour_iso(hour_start), hour_iso(hour_end)):
+        k = str(dims["edgeResponseStatus"])
+        raw_hour_status[k] = raw_hour_status.get(k, 0) + est
+    hs_scale = hour_scale
+    hour_statuses = dict(sorted(((k, int(round(v * hs_scale))) for k, v in raw_hour_status.items()), key=lambda kv: -kv[1]))
+    # Top referers only go to the JSON/log (unbounded label values, not for Prometheus).
+    referer_visits = dict(list(rum_by(start, end, "refererHost", lambda r: r or "(direct)", 30).items())[:15])
+
+    result = {
+        "day": day.isoformat(),
+        "hour": hour_iso(hour_start),
+        "hour_requests": hour_requests,
+        "hour_uniques": hour_uniques,
+        "hour_hosts": hour_hosts,
+        "hour_host_visits": hour_host_visits,
+        "hour_statuses": hour_statuses,
+        "hour_visits": hour_visits,
+        "day_visits": day_visits,
+        "day_pageloads": day_pageloads,
+        "host_visits": host_visits,
+        "referer_visits": referer_visits,
+        "agents": agents,
+        "agents_blocked": {f"{a}|blocked={b}": n for (a, b), n in agents_blocked.items()},
+        "methods": methods,
+        "statuses": statuses,
+        "host_unique_ips": host_unique_ips,
+        "host_agents": {f"{h}|{a}": n for (h, a), n in host_agents.items()},
+        "host_methods": {f"{h}|{m}": n for (h, m), n in host_methods.items()},
+        "host_cache": {f"{h}|{c}": n for (h, c), n in host_cache.items()},
+        "host_statuses": {f"{h}|{st}": n for (h, st), n in host_statuses.items()},
+        "countries": countries,
+        "devices": devices,
+        "host_countries": {f"{h}|{c}": n for (h, c), n in host_countries.items()},
+        "zone": ZONE,
+        "sample_scale": round(scale, 4),
+        "cdn_cgi_requests": cdn_cgi_requests,
+        "requests": totals["requests"],
+        "cached_requests": totals["cachedRequests"],
+        "bytes": totals["bytes"],
+        "threats": totals["threats"],
+        "page_views": totals["pageViews"],
+        "uniques": uniques,
+        "hosts": hosts,
+    }
+    print(json.dumps(result, indent=2))
+
+    day_ts = int(dt.datetime(day.year, day.month, day.day, tzinfo=dt.timezone.utc).timestamp())
+    now_ts = int(dt.datetime.now(dt.timezone.utc).timestamp())
+    lines = [
+        "# TYPE ohm_cf_requests_daily gauge",
+        f'ohm_cf_requests_daily {totals["requests"]}',
+        "# TYPE ohm_cf_uniques_daily gauge",
+        f"ohm_cf_uniques_daily {uniques}",
+        "# TYPE ohm_cf_cached_requests_daily gauge",
+        f'ohm_cf_cached_requests_daily {totals["cachedRequests"]}',
+        "# TYPE ohm_cf_host_requests_daily gauge",
+    ]
+    for host, n in hosts.items():
+        lines.append(f'ohm_cf_host_requests_daily{{host="{host}"}} {n}')
+    lines.append("# TYPE ohm_cf_host_unique_ips_daily gauge")
+    for host, n in host_unique_ips.items():
+        lines.append(f'ohm_cf_host_unique_ips_daily{{host="{host}"}} {n}')
+    lines.append("# TYPE ohm_cf_agent_requests_daily gauge")
+    for (fam, blocked), n in agents_blocked.items():
+        lines.append(f'ohm_cf_agent_requests_daily{{agent="{fam}",blocked="{blocked}"}} {n}')
+    lines.append("# TYPE ohm_cf_method_requests_daily gauge")
+    for m, n in methods.items():
+        lines.append(f'ohm_cf_method_requests_daily{{method="{m}"}} {n}')
+    lines.append("# TYPE ohm_cf_status_requests_daily gauge")
+    for st, n in statuses.items():
+        lines.append(f'ohm_cf_status_requests_daily{{status="{st}"}} {n}')
+    lines.append("# TYPE ohm_cf_host_agent_requests_daily gauge")
+    for (h, a), n in host_agents.items():
+        lines.append(f'ohm_cf_host_agent_requests_daily{{host="{h}",agent="{a}"}} {n}')
+    lines.append("# TYPE ohm_cf_host_method_requests_daily gauge")
+    for (h, m), n in host_methods.items():
+        lines.append(f'ohm_cf_host_method_requests_daily{{host="{h}",method="{m}"}} {n}')
+    lines.append("# TYPE ohm_cf_country_requests_daily gauge")
+    for c, n in countries.items():
+        lines.append(f'ohm_cf_country_requests_daily{{country="{c}"}} {n}')
+    lines.append("# TYPE ohm_cf_device_requests_daily gauge")
+    for dv, n in devices.items():
+        lines.append(f'ohm_cf_device_requests_daily{{device="{dv}"}} {n}')
+    lines.append("# TYPE ohm_cf_host_country_requests_daily gauge")
+    for (h, c), n in host_countries.items():
+        lines.append(f'ohm_cf_host_country_requests_daily{{host="{h}",country="{c}"}} {n}')
+    lines.append("# TYPE ohm_cf_host_status_requests_daily gauge")
+    for (h, st), n in host_statuses.items():
+        lines.append(f'ohm_cf_host_status_requests_daily{{host="{h}",status="{st}"}} {n}')
+    lines.append("# TYPE ohm_cf_host_cache_requests_daily gauge")
+    for (h, c), n in host_cache.items():
+        lines.append(f'ohm_cf_host_cache_requests_daily{{host="{h}",cache="{c}"}} {n}')
+    lines += [
+        "# TYPE ohm_cf_requests_hourly gauge",
+        f"ohm_cf_requests_hourly {hour_requests}",
+        "# TYPE ohm_cf_uniques_hourly gauge",
+        f"ohm_cf_uniques_hourly {hour_uniques}",
+        "# TYPE ohm_cf_host_requests_hourly gauge",
+    ]
+    for h, n in hour_hosts.items():
+        lines.append(f'ohm_cf_host_requests_hourly{{host="{h}"}} {n}')
+    lines.append("# TYPE ohm_cf_status_requests_hourly gauge")
+    for st, n in hour_statuses.items():
+        lines.append(f'ohm_cf_status_requests_hourly{{status="{st}"}} {n}')
+    if day_visits is not None:
+        lines += [
+            "# TYPE ohm_cf_visits_daily gauge",
+            f"ohm_cf_visits_daily {day_visits}",
+            "# TYPE ohm_cf_pageloads_daily gauge",
+            f"ohm_cf_pageloads_daily {day_pageloads}",
+            "# TYPE ohm_cf_visits_hourly gauge",
+            f"ohm_cf_visits_hourly {hour_visits}",
+            "# TYPE ohm_cf_host_visits_daily gauge",
+        ]
+        for h, n in host_visits.items():
+            lines.append(f'ohm_cf_host_visits_daily{{host="{h}"}} {n}')
+        lines.append("# TYPE ohm_cf_host_visits_hourly gauge")
+        for h, n in hour_host_visits.items():
+            lines.append(f'ohm_cf_host_visits_hourly{{host="{h}"}} {n}')
+    lines += [
+        "# TYPE ohm_cf_cdn_cgi_requests_daily gauge",
+        f"ohm_cf_cdn_cgi_requests_daily {cdn_cgi_requests}",
+        "# TYPE ohm_cf_sample_scale gauge",
+        f"ohm_cf_sample_scale {scale:.4f}",
+        "# TYPE ohm_cf_stats_day gauge",
+        f"ohm_cf_stats_day {day_ts}",
+        "# TYPE ohm_cf_stats_hour gauge",
+        f"ohm_cf_stats_hour {int(hour_start.timestamp())}",
+        "# TYPE ohm_cf_last_success_timestamp gauge",
+        f"ohm_cf_last_success_timestamp {now_ts}",
+    ]
+    payload = ("\n".join(lines) + "\n").encode()
+    if os.environ.get("DRY_RUN"):
+        print(payload.decode())
+        print("DRY_RUN set: not pushing, not writing to S3")
+        raise SystemExit(0)
+    req = urllib.request.Request(
+        f"{PUSHGATEWAY}/metrics/job/cloudflare-stats", data=payload, method="PUT"
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        print(f"pushgateway: HTTP {resp.status}")
+
+    if S3_URI:
+        import boto3  # installed by the CronJob command only when S3_URI is set
+
+        bucket, _, prefix = S3_URI.removeprefix("s3://").partition("/")
+        key = f"{prefix.strip('/') or 'cloudflare-stats'}/{day.isoformat()}.json"
+        boto3.client("s3").put_object(
+            Bucket=bucket,
+            Key=key,
+            Body=json.dumps(result, indent=2).encode(),
+            ContentType="application/json",
+        )
+        print(f"s3: s3://{bucket}/{key}")
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cloudflare-stats
+  namespace: monitoring
+spec:
+  # Every hour at :10. Cloudflare hourly data lags a few minutes; daily totals
+  # for "yesterday" are re-pushed on every run so they settle during the day.
+  schedule: "10 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: cloudflare-stats
+              image: python:3.12-slim
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  if [ -n "${S3_URI:-}" ]; then pip install --quiet --no-cache-dir boto3; fi
+                  python /app/cloudflare_stats.py
+              envFrom:
+                - secretRef:
+                    name: cloudflare-stats
+              env:
+                - name: PUSHGATEWAY_URL
+                  value: http://prometheus-prometheus-pushgateway.monitoring.svc.cluster.local:9091
+              volumeMounts:
+                - name: script
+                  mountPath: /app
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi
+          volumes:
+            - name: script
+              configMap:
+                name: cloudflare-stats-script

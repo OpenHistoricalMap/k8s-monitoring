@@ -5,3 +5,5 @@ configMaps/*
 .DS_Store
 auth
 .env
+cloudflare-stats/.cloudflare_stats.py
+cloudflare-stats/results.json

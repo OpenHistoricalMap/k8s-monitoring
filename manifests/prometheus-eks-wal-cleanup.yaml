@@ -1,0 +1,25 @@
+# One-off pod: wipes the Prometheus data volume in EKS before switching to
+# agent mode. Only the local WAL/TSDB is lost; history lives in k3s.
+# Usage (context = EKS, deployment scaled to 0 first):
+#   kubectl -n monitoring scale deploy prometheus-server --replicas=0
+#   kubectl apply -f manifests/prometheus-eks-wal-cleanup.yaml
+#   kubectl -n monitoring logs -f prometheus-wal-cleanup
+#   kubectl -n monitoring delete pod prometheus-wal-cleanup
+apiVersion: v1
+kind: Pod
+metadata:
+  name: prometheus-wal-cleanup
+  namespace: monitoring
+spec:
+  restartPolicy: Never
+  containers:
+    - name: cleanup
+      image: busybox:1.36
+      command: ["sh", "-c", "du -sh /data; rm -rf /data/wal /data/chunks_head /data/lock /data/01*; du -sh /data"]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: prometheus-server

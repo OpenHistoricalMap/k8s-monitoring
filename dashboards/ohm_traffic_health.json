@@ -1,0 +1,1215 @@
+{
+  "uid": "ohm-traffic-health",
+  "title": "OHM traffic health",
+  "description": "Blocked requests, errors, cache efficiency and the live tunnel rate. For operations.",
+  "tags": [
+    "ohm",
+    "cloudflare"
+  ],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "main_host",
+        "label": "Main hosts",
+        "type": "custom",
+        "query": "www,api,vtiles,static-tiles,nominatim,overpass-api,overpass-turbo,tasks,tm-api,taginfo,forum,planet,planet-stats,osmcha,embed,level0",
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "options": [
+          {
+            "text": "All",
+            "value": "$__all",
+            "selected": false
+          },
+          {
+            "text": "www",
+            "value": "www",
+            "selected": true
+          },
+          {
+            "text": "api",
+            "value": "api",
+            "selected": true
+          },
+          {
+            "text": "vtiles",
+            "value": "vtiles",
+            "selected": true
+          },
+          {
+            "text": "static-tiles",
+            "value": "static-tiles",
+            "selected": true
+          },
+          {
+            "text": "nominatim",
+            "value": "nominatim",
+            "selected": false
+          },
+          {
+            "text": "overpass-api",
+            "value": "overpass-api",
+            "selected": false
+          },
+          {
+            "text": "overpass-turbo",
+            "value": "overpass-turbo",
+            "selected": false
+          },
+          {
+            "text": "tasks",
+            "value": "tasks",
+            "selected": false
+          },
+          {
+            "text": "tm-api",
+            "value": "tm-api",
+            "selected": false
+          },
+          {
+            "text": "taginfo",
+            "value": "taginfo",
+            "selected": false
+          },
+          {
+            "text": "forum",
+            "value": "forum",
+            "selected": false
+          },
+          {
+            "text": "planet",
+            "value": "planet",
+            "selected": false
+          },
+          {
+            "text": "planet-stats",
+            "value": "planet-stats",
+            "selected": false
+          },
+          {
+            "text": "osmcha",
+            "value": "osmcha",
+            "selected": false
+          },
+          {
+            "text": "embed",
+            "value": "embed",
+            "selected": false
+          },
+          {
+            "text": "level0",
+            "value": "level0",
+            "selected": false
+          }
+        ],
+        "current": {
+          "selected": true,
+          "text": [
+            "www",
+            "api",
+            "vtiles",
+            "static-tiles"
+          ],
+          "value": [
+            "www",
+            "api",
+            "vtiles",
+            "static-tiles"
+          ]
+        }
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [
+    {
+      "title": "OHM usage",
+      "type": "link",
+      "url": "/d/ohm-usage"
+    },
+    {
+      "title": "OHM clients",
+      "type": "link",
+      "url": "/d/ohm-clients"
+    },
+    {
+      "title": "OHM traffic health",
+      "type": "link",
+      "url": "/d/ohm-traffic-health"
+    }
+  ],
+  "panels": [
+    {
+      "id": 201,
+      "type": "row",
+      "title": "Right now (hourly from Cloudflare, live from the tunnel)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 202,
+      "type": "timeseries",
+      "title": "Requests per hour, all hostnames",
+      "description": "Previous full hours, UTC.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1h",
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "last_over_time(ohm_cf_requests_hourly[1h] offset -2h)",
+          "legendFormat": "requests"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#2a78d6"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 203,
+      "type": "timeseries",
+      "title": "Unique IPs per hour",
+      "description": "Hours do not add up: an IP active all day counts in every hour.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1h",
+      "gridPos": {
+        "x": 8,
+        "y": 1,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "last_over_time(ohm_cf_uniques_hourly[1h] offset -2h)",
+          "legendFormat": "unique IPs"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#8a8a85"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 204,
+      "type": "timeseries",
+      "title": "Tunnel requests/s (Hetzner cloudflared)",
+      "description": "Live, only the traffic that reaches the Hetzner cluster. Blocked and cached requests never get here.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1m",
+      "gridPos": {
+        "x": 16,
+        "y": 1,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(rate(cloudflared_tunnel_total_requests[5m]))",
+          "legendFormat": "req/s"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(rate(cloudflared_tunnel_request_errors[5m]))",
+          "legendFormat": "errors/s"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 1,
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 8,
+            "lineWidth": 2,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "req/s"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2a78d6"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "errors/s"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c62828"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 205,
+      "type": "row",
+      "title": "Blocked and errors (per day)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 206,
+      "type": "timeseries",
+      "title": "Requests per day by response class",
+      "description": "403 = WAF or rate-limit rules in Cloudflare. 5xx = the origin failed (Martin, Rails, cgimap).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1d",
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 16,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (last_over_time(ohm_cf_status_requests_daily{status=~\"2..\"}[1d] offset -2d)))",
+          "legendFormat": "2xx ok"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (last_over_time(ohm_cf_status_requests_daily{status=~\"3..\"}[1d] offset -2d)))",
+          "legendFormat": "3xx redirect"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (last_over_time(ohm_cf_status_requests_daily{status=\"403\"}[1d] offset -2d)))",
+          "legendFormat": "403 blocked by Cloudflare"
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (last_over_time(ohm_cf_status_requests_daily{status=\"429\"}[1d] offset -2d)))",
+          "legendFormat": "429 rate limited"
+        },
+        {
+          "refId": "E",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (last_over_time(ohm_cf_status_requests_daily{status=~\"4..\",status!~\"403|429\"}[1d] offset -2d)))",
+          "legendFormat": "other 4xx"
+        },
+        {
+          "refId": "F",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (last_over_time(ohm_cf_status_requests_daily{status=~\"5..\"}[1d] offset -2d)))",
+          "legendFormat": "5xx errors"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "2xx ok"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#008300"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "3xx redirect"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2a78d6"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "403 blocked by Cloudflare"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#eb6834"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "429 rate limited"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e87ba4"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "other 4xx"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#eda100"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "5xx errors"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c62828"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 207,
+      "type": "timeseries",
+      "title": "Share blocked by Cloudflare (403)",
+      "description": "On 2026-09-21 this was 58%, almost all on vtiles.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1d",
+      "gridPos": {
+        "x": 16,
+        "y": 10,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (last_over_time(ohm_cf_status_requests_daily{status=\"403\"}[1d] offset -2d))) / sum(max by (status) (last_over_time(ohm_cf_status_requests_daily{}[1d] offset -2d)))",
+          "legendFormat": "403 share"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 8,
+            "lineWidth": 2,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#eb6834"
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 208,
+      "type": "row",
+      "title": "Cloudflare cache (tiles: a hit never reaches Martin)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 209,
+      "type": "timeseries",
+      "title": "Cache hit ratio per day by host",
+      "description": "(hit + stale + revalidated) / all requests on that host. vtiles at 0% means every tile is rendered by Martin.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1d",
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum by (host) (last_over_time(ohm_cf_host_cache_requests_daily{cache=~\"hit|stale|revalidated\",host=~\"$main_host\"}[1d] offset -2d)) / sum by (host) (last_over_time(ohm_cf_host_cache_requests_daily{host=~\"$main_host\"}[1d] offset -2d))",
+          "legendFormat": "{{host}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 0,
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 8,
+            "lineWidth": 2,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "vtiles"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2a78d6"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "api"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#eb6834"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "www"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1baf7a"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "static-tiles"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#eda100"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "nominatim"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e87ba4"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "openhistoricalmap.org"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#008300"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 210,
+      "type": "timeseries",
+      "title": "vtiles requests per day: where they end",
+      "description": "Blocked and passed come from the same per-host status breakdown. Cloudflare has no Cache Rule for .pbf, so it serves almost nothing itself; what passes reaches Varnish in the cluster (about 68% hit there) and only Varnish misses reach Martin. Varnish is not visible from Cloudflare.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "interval": "1d",
+      "gridPos": {
+        "x": 12,
+        "y": 19,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (status) (last_over_time(ohm_cf_host_status_requests_daily{host=\"vtiles\",status=\"403\"}[1d] offset -2d)))",
+          "legendFormat": "blocked by Cloudflare (403)"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "sum(max by (cache) (last_over_time(ohm_cf_host_cache_requests_daily{host=\"vtiles\",cache=~\"hit|stale|revalidated\"}[1d] offset -2d)))",
+          "legendFormat": "served by Cloudflare cache"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "clamp_min(sum(max by (status) (last_over_time(ohm_cf_host_status_requests_daily{host=\"vtiles\",status!=\"403\"}[1d] offset -2d))) - sum(max by (cache) (last_over_time(ohm_cf_host_cache_requests_daily{host=\"vtiles\",cache=~\"hit|stale|revalidated\"}[1d] offset -2d))), 0)",
+          "legendFormat": "passed to the cluster (Varnish, then Martin)"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false,
+            "pointSize": 4,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "blocked by Cloudflare (403)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#eb6834"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "served by Cloudflare cache"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#008300"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "passed to the cluster (Varnish, then Martin)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2a78d6"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 211,
+      "type": "row",
+      "title": "Stats job",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 212,
+      "type": "stat",
+      "title": "Minutes since last successful run",
+      "description": "The CronJob runs every hour at :10.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "(time() - ohm_cf_last_success_timestamp) / 60",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "m",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 90
+              },
+              {
+                "color": "red",
+                "value": 180
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 213,
+      "type": "stat",
+      "title": "Hour reported",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 28,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "ohm_cf_stats_hour * 1000",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsIso",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 214,
+      "type": "stat",
+      "title": "Day reported",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "ohm_cf_stats_day * 1000",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsIso",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 215,
+      "type": "stat",
+      "title": "Sampling scale",
+      "description": "exact daily total / sum of Cloudflare's sampled estimate. Breakdowns are multiplied by this.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_SOURCE_ID"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 28,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_SOURCE_ID"
+          },
+          "expr": "ohm_cf_sample_scale",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 3
+        },
+        "overrides": []
+      }
+    }
+  ]
+}

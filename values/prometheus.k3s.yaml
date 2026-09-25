@@ -9,6 +9,9 @@ server:
   extraFlags:
     - web.enable-lifecycle
     - web.enable-remote-write-receiver
+    # Lets us delete bad series (POST /api/v1/admin/tsdb/delete_series). Only
+    # reachable through port-forward or the Cloudflare Access hostname.
+    - web.enable-admin-api
   persistentVolume:
     enabled: true
     size: 40Gi
