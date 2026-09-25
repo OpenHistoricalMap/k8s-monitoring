@@ -1,21 +1,38 @@
-# Minimal Prometheus "agent" for EKS: no Grafana, no Alertmanager, no history.
-# Scrapes the local cluster (kube-state-metrics, cadvisor, node-exporter) and
-# pushes everything to the central Prometheus in k3s via remote_write.
-# Rendered with envsubst by the command in the README (CF_ACCESS_* vars).
+# Minimal Prometheus agent for EKS: no Grafana, no Alertmanager, no local TSDB.
+# Runs in agent mode (--agent): scrapes the local cluster (kube-state-metrics,
+# cadvisor, node-exporter) and forwards everything to the central Prometheus in
+# k3s via remote_write. Nothing can be queried here; look at Grafana in k3s.
+# Rendered with envsubst by deploy_eks.sh (REMOTE_WRITE_URL, CF_ACCESS_* vars).
+#
+# Why agent mode: the first version ran a full server with 6h retention and a
+# 1Gi limit. Its WAL grew for weeks (remote_write never caught up), the replay
+# on start needed more than 1Gi and the pod stayed in CrashLoopBackOff/OOMKilled
+# for 60 days without sending a single sample. See README "EKS agent".
 server:
-  retention: 6h
   global:
     external_labels:
       cluster: aws-eks
+  # Replaces the chart's default flags (which include TSDB retention, not valid in agent mode).
+  defaultFlagsOverride:
+    - --agent
+    - --config.file=/etc/config/prometheus.yml
+    - --storage.agent.path=/data
+    # Drop WAL data older than this even if remote_write is behind, so the WAL
+    # can never grow without bound again.
+    - --storage.agent.retention.max-time=1h
+    - --web.enable-lifecycle
   persistentVolume:
     enabled: true
     size: 10Gi
+  # Steady state was ~350Mi, but the WAL replay after a restart peaks well above
+  # that. 1Gi was OOMKilled in a loop (686 restarts). Requests = what it really
+  # uses so the scheduler leaves room; limit leaves headroom for the replay.
   resources:
     requests:
-      cpu: 100m
-      memory: 512Mi
+      cpu: 50m
+      memory: 768Mi
     limits:
-      memory: 1Gi
+      memory: 2Gi
   remoteWrite:
     # e.g. https://prometheus.ohmstaging.org/api/v1/write (staging)
     #      https://prometheus.openhistoricalmap.org/api/v1/write (production)
@@ -23,6 +40,34 @@ server:
       headers:
         CF-Access-Client-Id: "${CF_ACCESS_CLIENT_ID}"
         CF-Access-Client-Secret: "${CF_ACCESS_CLIENT_SECRET}"
+
+# Agent mode refuses rule_files in prometheus.yml; the chart adds them by default.
+serverFiles:
+  prometheus.yml:
+    rule_files: []
+
+# Keep only what the k3s dashboards and alerts read. cadvisor and kubelet expose
+# thousands of series per node; most of them were only inflating memory, the WAL
+# and the remote_write volume.
+scrapeConfigs:
+  prometheus-pushgateway:
+    enabled: false
+  # The API server alone exposes tens of thousands of histogram series; nothing reads them.
+  kubernetes-api-servers:
+    enabled: false
+  kubernetes-nodes-cadvisor:
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: container_(cpu_usage_seconds_total|memory_working_set_bytes|memory_usage_bytes|memory_rss|network_receive_bytes_total|network_transmit_bytes_total|cpu_cfs_throttled_seconds_total|oom_events_total|fs_usage_bytes)
+        action: keep
+      - source_labels: [container]
+        regex: POD
+        action: drop
+  kubernetes-nodes:
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: (kubelet_volume_stats_.*|kubelet_running_pods|kubelet_running_containers|kubelet_node_name|kubelet_pleg_relist_duration_seconds_.*|up)
+        action: keep
 
 alertmanager:
   enabled: false
