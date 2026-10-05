@@ -1,0 +1,87 @@
+# Fixed folders for the Prometheus and Grafana data on the k3s cluster, applied
+# by deploy_k3s.sh before the charts.
+#
+# A folder with a fixed name under /mnt survives moving the node to another
+# cluster: remove-worker.sh wipes k3s but keeps /mnt. The local-path volumes
+# used before had a random name under /var/lib/rancher and were wiped with it.
+#
+# They live on the node labelled nodegroup_type=downstream: the charts pin the
+# two pods there (values/prometheus.k3s.yaml, values/grafana.k3s.yaml).
+#
+# On a new node the folders start empty and the pods fill them. To carry the
+# data over from a local-path volume, stop the pods and copy it first:
+#   rsync -a /var/lib/rancher/k3s/storage/pvc-..._monitoring_prometheus-server/ /mnt/prometheus-data/
+#   rsync -a /var/lib/rancher/k3s/storage/pvc-..._monitoring_grafana/           /mnt/grafana-data/
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: monitoring-prometheus-data
+spec:
+  capacity:
+    storage: 40Gi
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: monitoring
+    name: prometheus-data
+  hostPath:
+    path: /mnt/prometheus-data
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: nodegroup_type
+              operator: In
+              values: [downstream]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data
+  namespace: monitoring
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: ""
+  volumeName: monitoring-prometheus-data
+  resources:
+    requests:
+      storage: 40Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: monitoring-grafana-data
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: monitoring
+    name: grafana-data
+  hostPath:
+    path: /mnt/grafana-data
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: nodegroup_type
+              operator: In
+              values: [downstream]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data
+  namespace: monitoring
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: ""
+  volumeName: monitoring-grafana-data
+  resources:
+    requests:
+      storage: 20Gi

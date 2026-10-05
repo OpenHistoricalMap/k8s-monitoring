@@ -25,6 +25,10 @@ install_monitoring() {
 
     kubectl get namespace monitoring >/dev/null 2>&1 || kubectl create namespace monitoring
 
+    # Fixed data folders under /mnt on the downstream node, before the charts
+    # that claim them.
+    kubectl apply -f manifests/volumes.k3s.yaml
+
     helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
     # grafana/grafana is deprecated since Jan 2026, chart moved to grafana-community
     helm repo add grafana-community https://grafana-community.github.io/helm-charts

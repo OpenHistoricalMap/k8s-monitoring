@@ -12,10 +12,12 @@ server:
     # Lets us delete bad series (POST /api/v1/admin/tsdb/delete_series). Only
     # reachable through port-forward or the Cloudflare Access hostname.
     - web.enable-admin-api
+  # /mnt/prometheus-data on the downstream node (manifests/volumes.k3s.yaml).
   persistentVolume:
     enabled: true
-    size: 40Gi
-    storageClass: local-path
+    existingClaim: prometheus-data
+  nodeSelector:
+    nodegroup_type: downstream
   resources:
     requests:
       cpu: 200m
@@ -31,6 +33,8 @@ alertmanager:
   # Public URL used in email links; Alertmanager itself is not exposed, so
   # point people at Grafana instead of the unreachable pod hostname.
   baseURL: https://monitoring.openhistoricalmap.org
+  # Only silences and the notification log, a few KB: a local-path volume, which
+  # on this cluster is a folder under /mnt/local-path.
   persistence:
     enabled: true
     size: 2Gi

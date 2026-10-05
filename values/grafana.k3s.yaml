@@ -1,14 +1,16 @@
 # Grafana values for k3s (production).
 # Rendered with envsubst by deploy_k3s.sh (only GRAFANA_ADMINPASSWORD is substituted).
+# /mnt/grafana-data on the downstream node (manifests/volumes.k3s.yaml).
 persistence:
   enabled: true
-  size: 20Gi
-  storageClassName: local-path
+  existingClaim: grafana-data
+nodeSelector:
+  nodegroup_type: downstream
 
 adminPassword: "${GRAFANA_ADMINPASSWORD}"
 
 # Exposed through the Cloudflare tunnel, not an Ingress.
-# In Cloudflare Zero Trust, add a Public Hostname on tunnel ohm-hetzner-app-production:
+# In Cloudflare Zero Trust, add a Public Hostname on the cluster's tunnel:
 #   monitoring.openhistoricalmap.org -> HTTP -> grafana.monitoring.svc.cluster.local:80
 ingress:
   enabled: false

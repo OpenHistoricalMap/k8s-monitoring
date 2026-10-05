@@ -6,7 +6,7 @@ This repository installs **Prometheus**, **Grafana** and exporters to monitor th
 
 Installs into the `monitoring` namespace:
 
-- **Prometheus** (server, alertmanager, node-exporter, kube-state-metrics, pushgateway), `local-path` storage, 30d retention.
+- **Prometheus** (server, alertmanager, node-exporter, kube-state-metrics, pushgateway), 30d retention. Its data and Grafana's live in fixed folders on the node labelled `nodegroup_type=downstream`: `/mnt/prometheus-data` and `/mnt/grafana-data` (`manifests/volumes.k3s.yaml`), so they survive moving the node to another cluster.
 - **Grafana** with the Prometheus datasource and the dashboards from `dashboards/` provisioned automatically.
 - Alert rules for pods (CrashLoop, NotReady, OOMKilled) and nodes (NotReady, disk), plus a `Watchdog` heartbeat. External site up/down checks are handled by UptimeRobot, not here. See issue [#1000](https://github.com/OpenHistoricalMap/issues/issues/1000).
 
